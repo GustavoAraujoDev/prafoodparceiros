@@ -1,4 +1,4 @@
-const API_URL = "http://127.0.0.1:3000/products";
+const API_URL = "https://prafoodapi.onrender.com/products";
 // Configuração do som de alerta
 const audioAlerta = new Audio(
   "https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3",
@@ -440,7 +440,7 @@ function closeModal() {
 // --- GESTÃO DE PEDIDOS ---
 async function loadOrders() {
   try {
-    const res = await fetch(`http://127.0.0.1:3000/pedidos`, {
+    const res = await fetch(`https://prafoodapi.onrender.com/pedidos`, {
       method: "GET",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -540,7 +540,7 @@ async function updateOrderStatus(orderId, newStatus) {
 
   try {
     const response = await fetch(
-      `http://127.0.0.1:3000/pedidos/${orderId}/status`,
+      `https://prafoodapi.onrender.com/pedidos/${orderId}/status`,
       {
         method: "PUT",
         credentials: "include",
@@ -655,7 +655,7 @@ async function printOrder(id) {
   });
 
   try {
-    const response = await fetch("http://127.0.0.1:3000/pedidos/imprimir", {
+    const response = await fetch("https://prafoodapi.onrender.com/pedidos/imprimir", {
       method: "POST",
       credentials: "include",
       headers: {
@@ -775,7 +775,7 @@ let allOrdersData = []; // Variável global para guardar os pedidos sem precisar
 
 async function loadDashboardData() {
   try {
-    const res = await fetch("http://127.0.0.1:3000/pedidos", {
+    const res = await fetch("https://prafoodapi.onrender.com/pedidos", {
       method: "GET",
       credentials: "include",
       headers: {
@@ -832,7 +832,7 @@ setInterval(async () => {
       primeiraBusca = false;
     }
 
-    const res = await fetch("http://127.0.0.1:3000/pedidos/pendentes", {
+    const res = await fetch("https://prafoodapi.onrender.com/pedidos/pendentes", {
       method: "GET",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -1076,7 +1076,7 @@ async function toggleSection(section) {
   if (section === "dashboard") {
     loadDashboardData();
     try {
-      const res = await fetch(`http://127.0.0.1:3000/pedidos`, {
+      const res = await fetch(`https://prafoodapi.onrender.com/pedidos`, {
         method: "GET",
         credentials: "include",
       });
