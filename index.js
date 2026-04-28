@@ -23,40 +23,47 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = document.getElementById("login-email").value;
   const password = document.getElementById("login-pass").value;
+
   try {
+    // 1. Tenta o login
     const response = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
-    const data = await response.json();
 
+    const data = await response.json();
     if (!response.ok) throw new Error(data.message || "Falha no login");
 
-    // 2. Busca os dados do usuário para verificar o Role
-    await fetchUserData();
+    // 2. AGUARDA a busca do perfil e armazena o retorno diretamente
+    // Modificamos para fetchUserData retornar o usuário, em vez de depender só da global
+    const user = await fetchUserData(); 
 
-    // 3. Valida se é ADMIN
-    if (!currentUser || currentUser.role !== "ADMIN") {
-      audioAlerta.play();
+    // 3. Validação robusta
+    if (!user || user.role !== "ADMIN") {
+      audioAlerta.play().catch(() => {});
       Toast.fire({
         icon: "error",
         title: "Acesso Negado",
         text: "Sua conta não tem permissão de administrador.",
       });
+      
+      // Opcional: Desloga se o user não for ADMIN para limpar cookies intrusos
+      await logout(); 
       return;
     }
 
+    // 4. Sucesso total
     Toast.fire({
       icon: "success",
-      title: "Acesso Liberado ",
-      text: "Sua conta tem permissão de administrador.",
+      title: "Bem-vindo, Admin!",
+      timer: 2000
     });
 
     showDashboard();
   } catch (err) {
-    alert("Erro: " + err.message);
+    Toast.fire({ icon: "error", title: err.message });
   }
 });
 
@@ -65,15 +72,17 @@ async function fetchUserData() {
     const response = await fetch(`${API_URL}/users/me`, {
       method: "GET",
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
     });
-    if (!response.ok) throw new Error("Erro ao carregar perfil");
+    
+    if (!response.ok) return null;
 
-    currentUser = await response.json();
+    const data = await response.json();
+    currentUser = data; // Mantém sua global atualizada
+    return data;        // Retorna para o fluxo do login usar
   } catch (err) {
     console.error("Erro ao buscar dados do usuário:", err);
+    return null;
   }
 }
 
