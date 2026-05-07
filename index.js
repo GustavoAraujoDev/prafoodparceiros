@@ -1,4 +1,4 @@
-const API_URL = "https://prafoodapi.onrender.com/products";
+const API_URL = "http://127.0.0.1:3000/products";
 // Configuração do som de alerta
 const audioAlerta = new Audio(
   "https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3",
@@ -18,7 +18,6 @@ const Toast = Swal.mixin({
 });
 let currentUser = null; // Variável global para o usuário
 
-// --- LOGIN ---
 // --- LOGIN ---
 document.getElementById("login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -94,9 +93,6 @@ async function logout() {
   } catch (err) {
     console.error("Erro ao falar com o servidor no logout:", err);
   } finally {
-    // 2. Limpa TUDO no navegador (LocalStorage e Hash)
-    localStorage.clear();
-
     // 3. Reseta o estado local
     currentUser = null;
 
@@ -119,6 +115,8 @@ async function loadProducts() {
     });
     const data = await res.json();
     const products = Array.isArray(data) ? data : data.data || [];
+    // 🔥 AQUI ESTÁ O SEGREDO: Salve os produtos na global
+    allProductsGlobal = products;
     renderTable(products);
   } catch (err) {
     console.error("Erro ao listar:", err);
@@ -134,7 +132,6 @@ function renderTable(products) {
 
   container.innerHTML = products
     .map((p) => {
-      // Lógica para definir a aparência do botão de status
       const isActive = p.status === "ACTIVE";
       const statusClass = isActive
         ? "text-green-600 bg-green-50 border-green-200"
@@ -142,27 +139,65 @@ function renderTable(products) {
       const iconClass = isActive ? "fa-toggle-on" : "fa-toggle-off";
 
       return `
-        <tr class="border-b hover:bg-gray-50 transition">
+        <tr class="border-b hover:bg-gray-50 transition align-top">
             <td class="px-6 py-4">
-                <div class="font-bold text-gray-800">${p.name}</div>
-                <div class="text-xs text-gray-400 truncate w-48">${p.description}</div>
+                <div class="font-bold text-gray-800 text-lg">${p.name}</div>
+                <div class="text-xs text-gray-400 truncate w-48 mb-2">${p.description}</div>
+                
+                <div class="mt-2 space-y-2">
+                    ${
+                      p.modifiers && p.modifiers.length > 0
+                        ? p.modifiers
+                            .map(
+                              (group) => `
+                        <div class="bg-blue-50/50 p-2 rounded-lg border border-blue-100">
+                            <p class="text-[10px] font-black uppercase text-blue-600 mb-1">${group.name}</p>
+                            <div class="flex flex-wrap gap-1">
+                                ${group.items
+                                  .map((item) => {
+                                    const itemActive = item.status === "ACTIVE";
+                                    return `
+                                        <span class="text-[10px] px-2 py-0.5 rounded-full border ${itemActive ? "bg-white border-green-200 text-green-700" : "bg-gray-100 border-gray-300 text-gray-400 line-through"}">
+                                            ${itemActive ? "🟢" : "🔴"} ${item.name}
+                                        </span>
+                                    `;
+                                  })
+                                  .join("")}
+                            </div>
+                        </div>
+                      `,
+                            )
+                            .join("")
+                        : '<span class="text-xs text-gray-300 italic">Sem opcionais</span>'
+                    }
+                </div>
             </td>
-            <td class="px-6 py-4 text-gray-500 uppercase text-xs font-bold">${p.categoryId}</td>
-            <td class="px-6 py-4 font-semibold">R$ ${parseFloat(p.basePrice).toFixed(2)}</td>
+
+            <td class="px-6 py-4">
+                <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-[10px] font-bold uppercase border border-gray-200">
+                    ${p.categoryId}
+                </span>
+            </td>
+
+            <td class="px-6 py-4">
+                <div class="font-bold text-gray-800">R$ ${parseFloat(p.basePrice).toFixed(2)}</div>
+                <div class="text-[10px] text-gray-400">Preço base</div>
+            </td>
             
             <td class="px-6 py-4">
                 <div class="flex flex-col gap-2">
+                    <p class="text-[10px] font-bold text-gray-400 uppercase">Estoque (SKUs)</p>
                     ${p.skus
                       .map(
                         (sku) => `
-                        <div class="flex items-center justify-between bg-gray-50 p-1 rounded border border-gray-100">
-                            <span class="text-xs font-medium text-gray-600">${sku.name}: <b class="text-gray-900">${sku.stock}</b></span>
-                            <div class="flex gap-1">
-                                <button onclick="handleStock('${p.id}', '${sku._id}', 'add')" class="text-green-500 hover:text-green-700">
-                                    <i class="fas fa-plus-circle text-xs"></i>
+                        <div class="flex items-center justify-between bg-white p-1.5 rounded border border-gray-200 shadow-sm">
+                            <span class="text-[11px] font-medium text-gray-700">${sku.name}: <b>${sku.stock}</b></span>
+                            <div class="flex gap-1 ml-4">
+                                <button onclick="handleStock('${p.id}', '${sku._id}', 'add')" class="text-green-500 hover:scale-110 transition">
+                                    <i class="fas fa-plus-circle"></i>
                                 </button>
-                                <button onclick="handleStock('${p.id}', '${sku._id}', 'sell')" class="text-orange-500 hover:text-orange-700">
-                                    <i class="fas fa-minus-circle text-xs"></i>
+                                <button onclick="handleStock('${p.id}', '${sku._id}', 'sell')" class="text-orange-500 hover:scale-110 transition">
+                                    <i class="fas fa-minus-circle"></i>
                                 </button>
                             </div>
                         </div>
@@ -174,16 +209,21 @@ function renderTable(products) {
 
             <td class="px-6 py-4 text-center">
                 <button onclick="toggleStatus('${p.id}', '${p.status}')" 
-                        class="flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-bold transition-all ${statusClass}">
-                    <i class="fas ${iconClass} text-lg"></i>
-                    ${isActive ? "ATIVO" : "INATIVO"}
+                        class="flex flex-col items-center gap-1 mx-auto px-4 py-2 rounded-xl border transition-all ${statusClass}">
+                    <i class="fas ${iconClass} text-xl"></i>
+                    <span class="text-[10px] font-black uppercase">${isActive ? "VENDENDO" : "PAUSADO"}</span>
                 </button>
             </td>
 
             <td class="px-6 py-4 text-right">
-                <button onclick="deleteProduct('${p.id}')" class="text-gray-300 hover:text-red-600 transition p-2">
-                    <i class="fas fa-trash"></i>
-                </button>
+                <div class="flex flex-col gap-2">
+                    <button onclick="editProduct('${p.id}')" class="text-blue-500 hover:text-blue-700 p-2 bg-blue-50 rounded-lg transition">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteProduct('${p.id}')" class="text-gray-300 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </td>
         </tr>
     `;
@@ -243,6 +283,63 @@ async function toggleStatus(productId, currentStatus) {
   }
 }
 
+function addGroup() {
+  const container = document.getElementById("modifiers-container"); // ou o ID do seu container de grupos
+  const groupId = "group-" + Math.random().toString(36).substr(2, 9);
+
+  const div = document.createElement("div");
+  div.className =
+    "bg-gray-50 p-4 rounded-xl border border-gray-200 mb-4 group-box";
+  div.dataset.id = groupId;
+
+  div.innerHTML = `
+        <div class="flex flex-wrap gap-2 mb-4 items-center border-b pb-2">
+            <input type="text" placeholder="Nome do Grupo (Ex: Proteínas)" class="group-name font-bold p-2 border rounded flex-1 bg-white">
+            <div class="flex items-center gap-2 text-xs">
+                <span>Mín:</span>
+                <input type="number" class="group-min w-12 p-1 border rounded" value="1">
+                <span>Máx:</span>
+                <input type="number" class="group-max w-12 p-1 border rounded" value="1">
+            </div>
+            <button type="button" onclick="this.parentElement.parentElement.remove()" class="text-red-500 text-xs font-bold uppercase">Remover Grupo</button>
+        </div>
+        
+        <div class="items-list space-y-2 mb-3">
+            </div>
+        
+        <button type="button" onclick="addItemToGroup('${groupId}')" class="bg-blue-50 text-blue-600 px-3 py-1 rounded-lg text-xs font-bold border border-blue-200 hover:bg-blue-100">
+            + Adicionar Opção (Ex: Frango)
+        </button>
+    `;
+  container.appendChild(div);
+}
+
+function addItemToGroup(groupId) {
+  const groupDiv = document.querySelector(`[data-id="${groupId}"] .items-list`);
+  const div = document.createElement("div");
+  div.className =
+    "flex gap-2 items-center bg-white p-2 rounded-lg border border-gray-100 item-row shadow-sm";
+
+  div.innerHTML = `
+        <input type="text" placeholder="Nome do item" class="item-name p-1 border rounded text-sm flex-1" required>
+        <input type="number" step="0.01" placeholder="Preço" class="item-price p-1 border rounded text-sm w-20" value="0">
+        
+        <select class="item-status p-1 border rounded text-sm font-bold bg-gray-50 cursor-pointer">
+            <option value="ACTIVE" class="text-green-600">🟢 ATIVO</option>
+            <option value="INACTIVE" class="text-red-600">🔴 INATIVO</option>
+        </select>
+        
+        <button type="button" onclick="this.parentElement.remove()" class="text-gray-400 hover:text-red-500">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+            </svg>
+        </button>
+    `;
+  groupDiv.appendChild(div);
+}
+
+addGroup();
+
 // Funções para Gerenciar a Interface
 function addSkuRow() {
   const container = document.getElementById("skus-container");
@@ -284,27 +381,18 @@ function addAttrField(btn) {
   list.appendChild(div);
 }
 
-function addModifierRow() {
-  const container = document.getElementById("modifiers-container");
-  const div = document.createElement("div");
-  div.className = "grid grid-cols-3 gap-2 border-b pb-2 modifier-row";
-  div.innerHTML = `
-        <input type="text" placeholder="Adicional (Ex: Bacon)" class="mod-name p-1 border rounded text-sm" required>
-        <input type="number" step="0.01" placeholder="Preço" class="mod-price p-1 border rounded text-sm" required>
-        <button type="button" onclick="this.parentElement.remove()" class="text-red-500 text-xs">Remover</button>
-    `;
-  container.appendChild(div);
-}
-
 // Inicializa com uma linha de cada
 addSkuRow();
-addModifierRow();
 
 // SUBMISSÃO DO FORMULÁRIO
 document
   .getElementById("product-form")
   .addEventListener("submit", async (e) => {
     e.preventDefault();
+
+    const productId = document.getElementById("prod-id").value;
+    alert(productId);
+    const isEdit = productId !== "";
 
     const allAttributeKeys = new Set();
 
@@ -340,13 +428,21 @@ document
     );
 
     // 2. Coletar Modifiers (Adicionais)
-    const modifierItems = Array.from(
-      document.querySelectorAll(".modifier-row"),
-    ).map((row) => ({
-      id: "item-" + Math.random().toString(36).substr(2, 9),
-      name: row.querySelector(".mod-name").value,
-      price: parseFloat(row.querySelector(".mod-price").value),
-    }));
+    const modifierGroups = Array.from(
+      document.querySelectorAll(".group-box"),
+    ).map((group) => {
+      return {
+        name: group.querySelector(".group-name").value,
+        required: parseInt(group.querySelector(".group-min").value) > 0,
+        min: parseInt(group.querySelector(".group-min").value),
+        max: parseInt(group.querySelector(".group-max").value),
+        items: Array.from(group.querySelectorAll(".item-row")).map((item) => ({
+          name: item.querySelector(".item-name").value,
+          price: parseFloat(item.querySelector(".item-price").value) || 0,
+          status: item.querySelector(".item-status").value, // Pega o Ativo/Inativo
+        })),
+      };
+    });
 
     // 3. Montar Objeto Final
     const productData = {
@@ -361,16 +457,7 @@ document
       attribute_keys: Array.from(allAttributeKeys), // Importante
       status: "ACTIVE",
       skus: skus,
-      modifiers: [
-        {
-          id: "mod-extras",
-          name: "Adicionais",
-          required: false,
-          min: 0,
-          max: 10,
-          items: modifierItems,
-        },
-      ],
+      modifiers: modifierGroups, // CORRETO: Cada grupo já tem seu nome (Proteína, etc),
       availability: {
         days: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
         start: document.getElementById("avail-start").value,
@@ -380,8 +467,11 @@ document
 
     // 4. Enviar para API
     try {
-      const response = await fetch(API_URL, {
-        method: "POST",
+      const url = isEdit ? `${API_URL}/${productId}` : API_URL;
+      const method = isEdit ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method: method,
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
@@ -395,9 +485,92 @@ document
       alert("Produto e variações salvos!");
       closeModal();
     } catch (err) {
-      alert("Falha: " + err.message);
+      // Se a API retornar algo como { message: ["O preço é obrigatório", "O nome é curto"] }
+      const finalMessage = Array.isArray(err.message)
+        ? err.message.join("\n")
+        : err.message;
+
+      alert("Verifique os dados informados:\n" + finalMessage);
     }
   });
+
+async function editProduct(id) {
+  try {
+    // 1. Buscar dados atuais do produto
+    const response = await fetch(`${API_URL}/${id}`, {
+      credentials: "include",
+    });
+    const p = await response.json();
+
+    if (!response.ok) throw new Error("Erro ao buscar produto");
+
+    // 2. Abrir modal e Resetar
+    openModal();
+    const form = document.getElementById("product-form");
+    form.reset();
+
+    // 3. Preencher campos básicos
+    document.getElementById("prod-id").value = p.id || p._id;
+    document.getElementById("modal-title").innerText = "Editar Produto";
+    document.getElementById("prod-name").value = p.name;
+    document.getElementById("prod-description").value = p.description;
+    document.getElementById("prod-base-price").value = p.basePrice;
+    document.getElementById("prod-cat-id").value = p.categoryId;
+    document.getElementById("prod-image").value = p.images?.[0] || "";
+    document.getElementById("avail-start").value =
+      p.availability?.start || "00:00";
+    document.getElementById("avail-end").value = p.availability?.end || "23:59";
+
+    // 4. Limpar e Preencher SKUs
+    const skuContainer = document.getElementById("skus-container");
+    skuContainer.innerHTML = ""; // Limpa os campos padrão
+    p.skus.forEach((sku) => {
+      addSkuRow(); // Cria a linha
+      const lastRow = skuContainer.lastElementChild;
+      lastRow.querySelector(".sku-name").value = sku.name;
+      lastRow.querySelector(".sku-price").value = sku.price;
+      lastRow.querySelector(".sku-stock").value = sku.stock;
+
+      // Preencher atributos do SKU
+      const attrList = lastRow.querySelector(".attributes-list");
+      attrList.innerHTML = ""; // Limpa o par padrão
+      Object.entries(sku.attributes || {}).forEach(([key, val]) => {
+        const div = document.createElement("div");
+        div.className = "flex gap-2 attr-pair";
+        div.innerHTML = `
+                    <input type="text" value="${key}" class="attr-key w-1/2 p-1 border rounded text-xs">
+                    <input type="text" value="${val}" class="attr-val w-1/2 p-1 border rounded text-xs">
+                `;
+        attrList.appendChild(div);
+      });
+    });
+
+    // 5. Limpar e Preencher Modificadores
+    const modContainer = document.getElementById("modifiers-container");
+    modContainer.innerHTML = "";
+    (p.modifiers || []).forEach((group) => {
+      addGroup();
+      const lastGroup = modContainer.lastElementChild;
+      const groupId = lastGroup.dataset.id;
+
+      lastGroup.querySelector(".group-name").value = group.name;
+      lastGroup.querySelector(".group-min").value = group.min;
+      lastGroup.querySelector(".group-max").value = group.max;
+
+      // Preencher itens do grupo
+      group.items.forEach((item) => {
+        addItemToGroup(groupId);
+        const lastItem =
+          lastGroup.querySelector(".items-list").lastElementChild;
+        lastItem.querySelector(".item-name").value = item.name;
+        lastItem.querySelector(".item-price").value = item.price;
+        lastItem.querySelector(".item-status").value = item.status;
+      });
+    });
+  } catch (err) {
+    alert("Erro ao carregar edição: " + err.message);
+  }
+}
 
 async function deleteProduct(id) {
   // 1. Confirmação inicial
@@ -430,18 +603,50 @@ async function deleteProduct(id) {
 }
 
 function openModal() {
+  document.getElementById("prod-id").value = ""; // MUITO IMPORTANTE
+  document.getElementById("modal-title").innerText = "Cadastrar Produto";
   document.getElementById("product-form").reset();
+
+  // Limpa containers dinâmicos para não acumular lixo de edições anteriores
+  document.getElementById("skus-container").innerHTML = "";
+  document.getElementById("modifiers-container").innerHTML = "";
+
+  // Adiciona uma linha em branco por padrão
+  addSkuRow();
+
   document.getElementById("product-modal").classList.remove("hidden");
 }
 
 function closeModal() {
-  document.getElementById("product-modal").classList.add("hidden");
+  // 1. Esconde o modal
+  const modal = document.getElementById("product-modal");
+  modal.classList.add("hidden");
+
+  // 2. Limpa o formulário (reseta inputs de texto, checkbox, etc)
+  const form = document.getElementById("product-form");
+  form.reset();
+
+  // 3. Limpa o ID oculto para que o próximo "Salvar" não tente editar o item anterior
+  const idInput = document.getElementById("prod-id");
+  if (idInput) {
+    idInput.value = "";
+  }
+
+  // 4. (Opcional) Limpa os containers dinâmicos para evitar "lixo" visual na próxima abertura
+  document.getElementById("skus-container").innerHTML = "";
+  document.getElementById("modifiers-container").innerHTML = "";
+
+  // Reseta o título do modal para o padrão
+  const title = document.getElementById("modal-title");
+  if (title) {
+    title.innerText = "Cadastrar Produto";
+  }
 }
 
 // --- GESTÃO DE PEDIDOS ---
 async function loadOrders() {
   try {
-    const res = await fetch(`https://prafoodapi.onrender.com/pedidos`, {
+    const res = await fetch(`http://127.0.0.1:3000/pedidos`, {
       method: "GET",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -522,6 +727,7 @@ function renderOrders(orders) {
                         <option value="READY" ${order.status === "READY" ? "selected" : ""}>Pronto</option>
                         <option value="ON_THE_WAY" ${order.status === "ON_THE_WAY" ? "selected" : ""}>Em rota</option>
                         <option value="DELIVERED" ${order.status === "DELIVERED" ? "selected" : ""}>Entregue</option>
+                         <option value="CANCELED" ${order.status === "CANCELED" ? "selected" : ""}>Cancelar</option>
                     </select>
                 </div>
             </div>
@@ -532,7 +738,6 @@ function renderOrders(orders) {
 }
 
 async function updateOrderStatus(orderId, newStatus) {
-  // Feedback visual imediato
   Swal.fire({
     title: "Atualizando status...",
     didOpen: () => Swal.showLoading(),
@@ -541,7 +746,7 @@ async function updateOrderStatus(orderId, newStatus) {
 
   try {
     const response = await fetch(
-      `https://prafoodapi.onrender.com/pedidos/${orderId}/status`,
+      `http://127.0.0.1:3000/pedidos/${orderId}/status`,
       {
         method: "PUT",
         credentials: "include",
@@ -558,18 +763,28 @@ async function updateOrderStatus(orderId, newStatus) {
 
     const pedidoAtualizado = result.data;
 
-    // 🔥 LÓGICA DE VENDA AUTOMÁTICA
+    // LÓGICA DE VENDA AUTOMÁTICA
     if (newStatus === "READY") {
       await processarVendasDoPedido(pedidoAtualizado);
     }
 
-    // Sucesso
+    // Injetamos o novo status manualmente para a mensagem
+    pedidoAtualizado.status = newStatus;
+
+    // --- SUCESSO UNIFICADO ---
     Swal.fire({
       icon: "success",
-      title: "Sucesso!",
-      text: `Pedido movido para ${newStatus} e estoque atualizado.`,
-      timer: 2000,
-      showConfirmButton: false,
+      title: "Status Atualizado!",
+      text: `O pedido ${pedidoAtualizado.id || ""} agora está como ${newStatus}.`,
+      showCancelButton: true,
+      confirmButtonText: "📱 Avisar no WhatsApp",
+      cancelButtonText: "Fechar",
+      confirmButtonColor: "#25D366", // Verde WhatsApp
+      cancelButtonColor: "#6e7881",
+    }).then((resultSwal) => {
+      if (resultSwal.isConfirmed) {
+        enviarNotificacaoWhatsApp(pedidoAtualizado);
+      }
     });
 
     if (typeof loadOrders === "function") loadOrders();
@@ -580,6 +795,36 @@ async function updateOrderStatus(orderId, newStatus) {
       title: "Falha na operação",
       text: err.message,
     });
+  }
+}
+
+function enviarNotificacaoWhatsApp(pedido) {
+  // Acessando os dados conforme a estrutura do seu objeto
+  const cliente = pedido.cliente || {};
+  const celular = cliente.telefone ? cliente.telefone.replace(/\D/g, "") : "";
+  const nome = cliente.nome || "Cliente";
+  const idPedido = pedido.id || pedido._id; // Usa o ID formatado ou o do MongoDB
+  const statusAtual = pedido.status; // O status que você acabou de atualizar
+
+  const mensagens = {
+    CONFIRMED: `Olá ${nome}! Seu pedido ${idPedido} foi confirmado e já vai entrar em produção. 👍`,
+    PREPARING: `Olá ${nome}! Seu pedido ${idPedido} já está sendo preparado com todo carinho. 👨‍🍳`,
+    READY: `Olá ${nome}! Boas notícias: seu pedido ${idPedido} está pronto para retirada! 🥳`,
+    ON_THE_WAY: `Olá ${nome}! Seu pedido ${idPedido} acabou de sair para entrega. Prepare a mesa! 🛵`,
+    DELIVERED: `Olá ${nome}! Seu pedido ${idPedido} foi entregue. Bom apetite! 😋`,
+    CANCELED: `Olá ${nome}, o seu pedido ${idPedido} foi cancelado. Se tiver dúvidas, entre em contato conosco.`,
+    default: `Olá ${nome}! O status do seu pedido ${idPedido} foi atualizado para: ${statusAtual}.`,
+  };
+
+  const texto = mensagens[statusAtual] || mensagens["default"];
+
+  // O link utiliza o código do país (55) + o telefone limpo
+  const url = `https://api.whatsapp.com/send?phone=55${celular}&text=${encodeURIComponent(texto)}`;
+
+  if (celular) {
+    window.open(url, "_blank");
+  } else {
+    console.error("Erro: Cliente sem telefone cadastrado.");
   }
 }
 
@@ -656,7 +901,7 @@ async function printOrder(id) {
   });
 
   try {
-    const response = await fetch("https://prafoodapi.onrender.com/pedidos/imprimir", {
+    const response = await fetch("http://127.0.0.1:3000/pedidos/imprimir", {
       method: "POST",
       credentials: "include",
       headers: {
@@ -776,7 +1021,7 @@ let allOrdersData = []; // Variável global para guardar os pedidos sem precisar
 
 async function loadDashboardData() {
   try {
-    const res = await fetch("https://prafoodapi.onrender.com/pedidos", {
+    const res = await fetch("http://127.0.0.1:3000/pedidos", {
       method: "GET",
       credentials: "include",
       headers: {
@@ -833,7 +1078,7 @@ setInterval(async () => {
       primeiraBusca = false;
     }
 
-    const res = await fetch("https://prafoodapi.onrender.com/pedidos/pendentes", {
+    const res = await fetch("http://127.0.0.1:3000/pedidos/pendentes", {
       method: "GET",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -859,16 +1104,6 @@ setInterval(async () => {
         title: `${novosPedidos.length} novo(s) pedido(s) recebido(s)!`,
         text: "Enviando para a impressora...",
       });
-
-      for (let pedido of novosPedidos) {
-        const pedidoId = pedido._id || pedido.id;
-
-        // 1. Atualiza status para não repetir a impressão
-        await updateOrderStatus(pedidoId, "PREPARING");
-
-        // 2. Imprime (sua função já existente)
-        await printOrder(pedidoId);
-      }
 
       // Opcional: Recarregar a lista de pedidos se o usuário estiver na tela de pedidos
       if (
@@ -1056,7 +1291,7 @@ async function toggleSection(section) {
   // 🔥 NOVO: Salva a seção atual para não perder no F5
   localStorage.setItem("admin_last_section", section);
 
-  const sections = ["menu", "orders", "dashboard"];
+  const sections = ["menu", "orders", "dashboard", "tables"];
 
   sections.forEach((s) => {
     const el = document.getElementById(`section-${s}`);
@@ -1074,10 +1309,11 @@ async function toggleSection(section) {
   // Gatilhos de carregamento de dados
   if (section === "menu") loadProducts();
   if (section === "orders") loadOrders();
+  if (section === "tables") initTables();
   if (section === "dashboard") {
     loadDashboardData();
     try {
-      const res = await fetch(`https://prafoodapi.onrender.com/pedidos`, {
+      const res = await fetch(`http://127.0.0.1:3000/pedidos`, {
         method: "GET",
         credentials: "include",
       });
@@ -1112,7 +1348,7 @@ async function initTables() {
   try {
     // Busca o estado atual no servidor
     const res = await fetch(
-      `https://prafoodapi.onrender.com/products/tables/status/${companyId}`,
+      `http://127.0.0.1:3000/products/tables/status/${companyId}`,
     );
     const result = await res.json();
 
@@ -1473,7 +1709,7 @@ async function criarPedidoNoSistema(pedidoFinal) {
     allowOutsideClick: false,
   });
 
-  const res = await fetch(`https://prafoodapi.onrender.com/pedidos`, {
+  const res = await fetch(`http://127.0.0.1:3000/pedidos`, {
     // Usando a constante de ambiente que definimos antes
     method: "POST",
     credentials: "include",
@@ -1714,7 +1950,7 @@ async function saveTablesToStorage() {
 
   try {
     // 3. Sincronização com o Backend
-    const response = await fetch(`https://prafoodapi.onrender.com/products/tables/sync`, {
+    const response = await fetch(`http://127.0.0.1:3000/products/tables/sync`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1792,4 +2028,3 @@ window.onclick = function (event) {
     closePrinterModal();
   }
 };
-
