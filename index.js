@@ -1362,7 +1362,7 @@ async function initTables() {
     if (res.ok && result.tables) {
       // Se encontrou no banco, carrega
       tablesData = result.tables;
-      alert("Dados das mesas carregados do servidor.");
+      
     } else {
       // Se não houver no banco, tenta o backup local
       const saved = localStorage.getItem("prafood_tables_data");
