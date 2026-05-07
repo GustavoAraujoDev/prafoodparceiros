@@ -8,10 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="shortcut icon" href="../logoPraFood.jpeg" type="image/x-icon" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <style>
       :root {
         --ifood-red: #ea1d2c;
@@ -40,181 +37,99 @@
       .hidden {
         display: none;
       }
+      /* Ajuste para scroll suave em modais mobile */
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
     </style>
   </head>
   <body>
-    <div
-      id="login-screen"
-      class="min-h-screen flex items-center justify-center bg-white"
-    >
-      <div class="max-w-md w-full p-8 text-center">
-        <img src="../logoPraFood.jpeg" alt="iFood" class="w-41 mx-auto mb-8" />
-        <form id="login-form" class="space-y-4 text-left">
+    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-white p-4">
+      <div class="max-w-md w-full text-center">
+        <img src="../logoPraFood.jpeg" alt="iFood" class="w-32 md:w-41 mx-auto mb-8" />
+        <form id="login-form" class="space-y-4 text-left border p-6 rounded-2xl shadow-sm">
           <div>
-            <label class="block text-sm font-medium text-gray-700"
-              >E-mail</label
-            >
-            <input
-              type="email"
-              id="login-email"
-              required
-              class="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-red-500"
-            />
+            <label class="block text-sm font-medium text-gray-700">E-mail</label>
+            <input type="email" id="login-email" required class="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-red-500" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700">Senha</label>
-            <input
-              type="password"
-              id="login-pass"
-              required
-              class="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-red-500"
-            />
+            <input type="password" id="login-pass" required class="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-red-500" />
           </div>
-          <button
-            type="submit"
-            class="w-full btn-primary py-3 rounded-lg font-bold text-lg"
-          >
-            Entrar
-          </button>
+          <button type="submit" class="w-full btn-primary py-3 rounded-lg font-bold text-lg">Entrar</button>
         </form>
       </div>
     </div>
 
-    <div id="main-app" class="hidden min-h-screen flex">
-      <aside class="w-64 bg-white border-r hidden md:block p-6">
-        <img src="../logoPraFood.jpeg" alt="PraFood" class="w-25 mb-15" />
-        <nav class="space-y-4">
-          <a
-            href="#"
-            id="nav-menu"
-            onclick="toggleSection('menu')"
-            class="block font-bold text-red-600 border-l-4 border-red-600 pl-3"
-            >🍔 Cardápio</a
-          >
-
-          <a
-            href="#"
-            id="nav-orders"
-            onclick="toggleSection('orders')"
-            class="block text-gray-500 hover:text-red-500 pl-4 transition"
-            >📋 Pedidos</a
-          >
-
-          <a
-            href="#"
-            id="nav-tables"
-            onclick="toggleSection('tables')"
-            class="block text-gray-500 hover:text-red-500 pl-4 transition"
-          >
-            <i class="fas fa-table mr-2"></i> Gestão de Mesas
+    <div id="main-app" class="hidden min-h-screen flex flex-col md:flex-row">
+      <aside class="w-full md:w-64 bg-white border-t md:border-t-0 md:border-r fixed bottom-0 md:relative z-50 md:z-0 p-2 md:p-6">
+        <div class="hidden md:block">
+            <img src="../logoPraFood.jpeg" alt="PraFood" class="w-20 mb-10 mx-auto" />
+        </div>
+        <nav class="flex flex-row md:flex-col justify-around md:justify-start md:space-y-4">
+          <a href="#" id="nav-menu" onclick="toggleSection('menu')" class="flex flex-col md:flex-row items-center gap-1 md:gap-3 text-xs md:text-base font-bold text-red-600 md:border-l-4 md:border-red-600 md:pl-3">
+            <span class="md:hidden text-lg">🍔</span> <span class="hidden md:inline">🍔 Cardápio</span><span class="md:hidden">Menu</span>
           </a>
-
-          <a
-            href="#"
-            id="nav-dashboard"
-            onclick="toggleSection('dashboard')"
-            class="block text-gray-500 hover:text-red-500 pl-4 transition"
-            >📊 Dashboard</a
-          >
-
-          <button
-            onclick="openPrinterModal()"
-            class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition text-gray-700 font-medium"
-          >
-            <i class="fas fa-print"></i>
-            <span>Impressora</span>
-            <span
-              id="printer-dot"
-              class="w-2 h-2 rounded-full bg-green-500 animate-pulse"
-            ></span>
-          </button>
-
-          <a
-            href="#"
-            onclick="logout()"
-            class="block text-gray-400 hover:text-red-500 pl-4 mt-20 transition"
-            >Sair</a
-          >
+          <a href="#" id="nav-orders" onclick="toggleSection('orders')" class="flex flex-col md:flex-row items-center gap-1 md:gap-3 text-xs md:text-base text-gray-500 hover:text-red-500 md:pl-4 transition">
+            <span class="md:hidden text-lg">📋</span> <span class="hidden md:inline">📋 Pedidos</span><span class="md:hidden">Pedidos</span>
+          </a>
+          <a href="#" id="nav-tables" onclick="toggleSection('tables')" class="flex flex-col md:flex-row items-center gap-1 md:gap-3 text-xs md:text-base text-gray-500 hover:text-red-500 md:pl-4 transition">
+            <i class="fas fa-table text-lg md:text-base"></i> <span class="hidden md:inline">Gestão de Mesas</span><span class="md:hidden">Mesas</span>
+          </a>
+          <a href="#" id="nav-dashboard" onclick="toggleSection('dashboard')" class="flex flex-col md:flex-row items-center gap-1 md:gap-3 text-xs md:text-base text-gray-500 hover:text-red-500 md:pl-4 transition">
+            <span class="md:hidden text-lg">📊</span> <span class="hidden md:inline">📊 Dashboard</span><span class="md:hidden">Dados</span>
+          </a>
+          <button onclick="logout()" class="hidden md:block text-gray-400 hover:text-red-500 pl-4 mt-10 text-left transition">Sair</button>
         </nav>
       </aside>
 
-      <main class="flex-1 p-8">
+      <main class="flex-1 p-4 md:p-8 pb-24 md:pb-8">
+        
         <section id="section-menu">
-          <header class="flex justify-between items-center mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">Gestão de Itens</h1>
-
-            <button
-              onclick="openModal()"
-              class="btn-primary px-6 py-2 rounded-lg font-bold shadow-md"
-            >
+          <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Gestão de Itens</h1>
+            <button onclick="openModal()" class="w-full sm:w-auto btn-primary px-6 py-2 rounded-lg font-bold shadow-md">
               <i class="fas fa-plus mr-2"></i> Novo Produto
             </button>
           </header>
-          <div
-            class="bg-white p-4 rounded-xl shadow-sm mb-6 flex flex-wrap gap-4 items-end"
-          >
-            <div class="flex-1 min-w-[200px]">
-              <label
-                class="block text-xs font-bold text-gray-500 mb-1 uppercase"
-                >Buscar Produto</label
-              >
+
+          <div class="bg-white p-4 rounded-xl shadow-sm mb-6 flex flex-col sm:flex-row gap-4">
+            <div class="flex-1">
+              <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Buscar</label>
               <div class="relative">
-                <span
-                  class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400"
-                >
-                  <i class="fas fa-search"></i>
-                </span>
-                <input
-                  type="text"
-                  id="filter-menu-search"
-                  onkeyup="filterMenu()"
-                  placeholder="Nome do item..."
-                  class="w-full pl-10 pr-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-red-500"
-                />
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400"><i class="fas fa-search"></i></span>
+                <input type="text" id="filter-menu-search" onkeyup="filterMenu()" placeholder="Nome do item..." class="w-full pl-10 pr-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-red-500" />
               </div>
             </div>
-            <div>
-              <label
-                class="block text-xs font-bold text-gray-500 mb-1 uppercase"
-                >Categoria</label
-              >
-              <select
-                id="filter-menu-cat"
-                onchange="filterMenu()"
-                class="border rounded-lg p-2 bg-gray-50 outline-none focus:ring-2 focus:ring-red-500"
-              >
-                <option value="all">Todas</option>
-                <option value="pizzas">Pizzas</option>
-                <option value="bebidas">Bebidas</option>
-                <option value="sobremesas">Sobremesas</option>
-              </select>
-            </div>
-            <div>
-              <label
-                class="block text-xs font-bold text-gray-500 mb-1 uppercase"
-                >Status</label
-              >
-              <select
-                id="filter-menu-status"
-                onchange="filterMenu()"
-                class="border rounded-lg p-2 bg-gray-50 outline-none focus:ring-2 focus:ring-red-500"
-              >
-                <option value="all">Todos</option>
-                <option value="ACTIVE">Disponível</option>
-                <option value="INACTIVE">Pausado</option>
-              </select>
+            <div class="grid grid-cols-2 gap-2 sm:flex sm:gap-4">
+                <div class="w-full">
+                    <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Categoria</label>
+                    <select id="filter-menu-cat" onchange="filterMenu()" class="w-full border rounded-lg p-2 bg-gray-50 outline-none focus:ring-2 focus:ring-red-500">
+                      <option value="all">Todas</option>
+                      <option value="pizzas">Pizzas</option>
+                      <option value="bebidas">Bebidas</option>
+                    </select>
+                </div>
+                <div class="w-full">
+                    <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Status</label>
+                    <select id="filter-menu-status" onchange="filterMenu()" class="w-full border rounded-lg p-2 bg-gray-50 outline-none focus:ring-2 focus:ring-red-500">
+                      <option value="all">Todos</option>
+                      <option value="ACTIVE">Disponível</option>
+                      <option value="INACTIVE">Pausado</option>
+                    </select>
+                </div>
             </div>
           </div>
 
-          <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-            <table class="w-full text-left">
+          <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
+            <table class="w-full text-left min-w-[600px]">
               <thead class="bg-gray-50 border-b text-gray-600">
                 <tr>
-                  <th class="px-6 py-4 font-semibold">Produto</th>
-                  <th class="px-6 py-4 font-semibold">Categoria</th>
-                  <th class="px-6 py-4 font-semibold">Preço</th>
-                  <th class="px-6 py-4 font-semibold">Status</th>
-                  <th class="px-6 py-4 font-semibold text-right">Ações</th>
+                  <th class="px-4 md:px-6 py-4 font-semibold">Produto</th>
+                  <th class="px-4 md:px-6 py-4 font-semibold">Categoria</th>
+                  <th class="px-4 md:px-6 py-4 font-semibold">Preço</th>
+                  <th class="px-4 md:px-6 py-4 font-semibold">Status</th>
+                  <th class="px-4 md:px-6 py-4 font-semibold text-right">Ações</th>
                 </tr>
               </thead>
               <tbody id="product-list"></tbody>
@@ -223,232 +138,66 @@
         </section>
 
         <section id="section-tables" class="hidden">
-          <header class="flex justify-between items-center mb-8">
+          <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
             <div>
-              <h1 class="text-3xl font-bold text-gray-800">Mapa de Mesas</h1>
-              <p class="text-gray-500 text-sm">
-                Gerencie pedidos presenciais e comandas
-              </p>
+              <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Mapa de Mesas</h1>
+              <p class="text-gray-500 text-sm">Gerencie pedidos presenciais</p>
             </div>
-            <div
-              id="selected-table-badge"
-              class="hidden bg-red-100 text-red-600 px-4 py-2 rounded-full font-bold animate-pulse"
-            >
+            <div id="selected-table-badge" class="hidden bg-red-100 text-red-600 px-4 py-2 rounded-full font-bold animate-pulse text-sm">
               Editando Mesa <span id="active-table-number">0</span>
             </div>
           </header>
 
-          <div
-            id="tables-grid"
-            class="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-10 gap-4 mb-10"
-          ></div>
+          <div id="tables-grid" class="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-10 gap-2 md:gap-4 mb-10"></div>
 
           <div id="table-workspace" class="hidden space-y-6">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div
-                class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100"
-              >
-                <div class="flex justify-between items-center mb-4">
-                  <h3
-                    class="font-bold text-gray-700 uppercase tracking-wider text-sm"
-                  >
-                    Adicionar ao Pedido
-                  </h3>
-                  <input
-                    type="text"
-                    id="search-table-product"
-                    onkeyup="filterMenuTable()"
-                    placeholder="Buscar no cardápio..."
-                    class="text-xs border rounded-lg px-3 py-1 outline-none focus:ring-1 focus:ring-red-500"
-                  />
+              <div class="lg:col-span-2 bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+                  <h3 class="font-bold text-gray-700 uppercase tracking-wider text-sm">Adicionar ao Pedido</h3>
+                  <input type="text" id="search-table-product" onkeyup="filterMenuTable()" placeholder="Buscar..." class="w-full sm:w-auto text-xs border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-red-500" />
                 </div>
-                <div
-                  id="table-menu-container"
-                  class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto pr-2"
-                ></div>
+                <div id="table-menu-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[400px] md:max-h-[500px] overflow-y-auto pr-2"></div>
               </div>
 
-              <div
-                class="bg-white p-6 rounded-2xl shadow-lg border-t-4 border-red-600 flex flex-col h-fit"
-              >
-                <h3 class="font-bold text-gray-800 mb-4 border-b pb-2">
-                  Comanda Atual
-                </h3>
-                <div
-                  id="current-table-items"
-                  class="space-y-3 mb-6 min-h-[100px]"
-                ></div>
+              <div class="bg-white p-6 rounded-2xl shadow-lg border-t-4 border-red-600 flex flex-col h-fit">
+                <h3 class="font-bold text-gray-800 mb-4 border-b pb-2">Comanda Atual</h3>
+                <div id="current-table-items" class="space-y-3 mb-6 min-h-[100px]"></div>
                 <div class="border-t pt-4 space-y-2">
-                  <div class="flex justify-between text-gray-500">
-                    <span>Subtotal</span>
-                    <span id="table-subtotal">R$ 0,00</span>
-                  </div>
-                  <div
-                    class="flex justify-between text-xl font-black text-gray-800"
-                  >
-                    <span>Total</span>
-                    <span id="table-total">R$ 0,00</span>
-                  </div>
+                  <div class="flex justify-between text-gray-500"><span>Subtotal</span><span id="table-subtotal">R$ 0,00</span></div>
+                  <div class="flex justify-between text-xl font-black text-gray-800"><span>Total</span><span id="table-total">R$ 0,00</span></div>
                 </div>
-                <button
-                  onclick="closeTableAccount()"
-                  class="w-full btn-primary mt-6 py-3 rounded-xl font-bold shadow-lg"
-                >
-                  Fechar e Imprimir
-                </button>
-                <button
-                  onclick="cancelTableSelection()"
-                  class="w-full text-gray-400 text-sm mt-3"
-                >
-                  Sair da Mesa
-                </button>
+                <button onclick="closeTableAccount()" class="w-full btn-primary mt-6 py-3 rounded-xl font-bold shadow-lg">Fechar e Imprimir</button>
+                <button onclick="cancelTableSelection()" class="w-full text-gray-400 text-sm mt-3">Sair da Mesa</button>
               </div>
             </div>
           </div>
         </section>
 
         <section id="section-orders" class="hidden">
-          <header class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">Pedidos Recentes</h1>
-          </header>
-          <div
-            class="bg-white p-4 rounded-xl shadow-sm mb-6 flex flex-wrap gap-4 items-end"
-          >
-            <div class="flex-1 min-w-[200px]">
-              <label
-                class="block text-xs font-bold text-gray-500 mb-1 uppercase"
-                >Nº do Pedido ou Cliente</label
-              >
-              <input
-                type="text"
-                id="filter-order-search"
-                onkeyup="filterOrders()"
-                placeholder="Ex: #4052 ou João..."
-                class="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-red-500"
-              />
-            </div>
-            <div>
-              <label
-                class="block text-xs font-bold text-gray-500 mb-1 uppercase"
-                >Status do Pedido</label
-              >
-              <select
-                id="filter-order-status"
-                onchange="filterOrders()"
-                class="border rounded-lg p-2 bg-gray-50 outline-none focus:ring-2 focus:ring-red-500"
-              >
-                <option value="all">Todos os Status</option>
-                <option value="PREPARING">Em Preparo</option>
-                <option value="READY">Pronto para Retirada</option>
-                <option value="OUT_FOR_DELIVERY">Saiu para Entrega</option>
-                <option value="CONCLUDED">Concluído</option>
-                <option value="CANCELLED">Cancelado</option>
-              </select>
-            </div>
-            <div>
-              <label
-                class="block text-xs font-bold text-gray-500 mb-1 uppercase"
-                >Tipo</label
-              >
-              <select
-                id="filter-order-type"
-                onchange="filterOrders()"
-                class="border rounded-lg p-2 bg-gray-50 outline-none focus:ring-2 focus:ring-red-500"
-              >
-                <option value="all">Todos</option>
-                <option value="DELIVERY">Entrega</option>
-                <option value="TAKEOUT">Retirada</option>
-              </select>
-            </div>
-          </div>
-          <div
-            id="orders-container"
-            class="grid grid-cols-1 lg:grid-cols-2 gap-6"
-          ></div>
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-8">Pedidos Recentes</h1>
+            <div id="orders-container" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6"></div>
         </section>
+
         <section id="section-dashboard" class="hidden">
           <header class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">Desempenho da Loja</h1>
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Desempenho</h1>
           </header>
-
-          <div
-            class="flex flex-wrap gap-4 mb-8 bg-white p-4 rounded-xl shadow-sm items-end"
-          >
-            <div>
-              <label
-                class="block text-xs font-bold text-gray-500 mb-1 uppercase"
-                >Período</label
-              >
-              <select
-                id="dash-filter-period"
-                onchange="applyDashFilters()"
-                class="border rounded-lg p-2 bg-gray-50 outline-none focus:ring-2 focus:ring-red-500"
-              >
-                <option value="today">Hoje</option>
-                <option value="yesterday">Ontem</option>
-                <option value="7days" selected>Últimos 7 dias</option>
-                <option value="30days">Últimos 30 dias</option>
-                <option value="all">Todo o período</option>
-              </select>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-8">
+            <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border-t-4 border-red-500">
+              <p class="text-gray-500 text-xs md:text-sm font-medium">Vendas</p>
+              <h3 id="kpi-vendas" class="text-lg md:text-2xl font-bold">R$ 0,00</h3>
             </div>
-            <div>
-              <label
-                class="block text-xs font-bold text-gray-500 mb-1 uppercase"
-                >Método de Pagamento</label
-              >
-              <select
-                id="dash-filter-payment"
-                onchange="applyDashFilters()"
-                class="border rounded-lg p-2 bg-gray-50 outline-none focus:ring-2 focus:ring-red-500"
-              >
-                <option value="all">Todos os métodos</option>
-                <option value="PIX">PIX</option>
-                <option value="CREDIT_CARD">Cartão de Crédito</option>
-                <option value="CASH">Dinheiro</option>
-              </select>
+            <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm border-t-4 border-blue-500">
+              <p class="text-gray-500 text-xs md:text-sm font-medium">Pedidos</p>
+              <h3 id="kpi-pedidos" class="text-lg md:text-2xl font-bold">0</h3>
             </div>
-            <button
-              onclick="loadDashboardData()"
-              class="text-sm text-red-600 hover:underline ml-auto"
-            >
-              <i class="fas fa-sync-alt"></i> Atualizar Dados
-            </button>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div
-              class="bg-white p-6 rounded-xl shadow-sm border-t-4 border-red-500"
-            >
-              <p class="text-gray-500 text-sm font-medium">Vendas Hoje</p>
-              <h3 id="kpi-vendas" class="text-2xl font-bold">R$ 0,00</h3>
             </div>
-            <div
-              class="bg-white p-6 rounded-xl shadow-sm border-t-4 border-blue-500"
-            >
-              <p class="text-gray-500 text-sm font-medium">Pedidos Totais</p>
-              <h3 id="kpi-pedidos" class="text-2xl font-bold">0</h3>
-            </div>
-            <div
-              class="bg-white p-6 rounded-xl shadow-sm border-t-4 border-green-500"
-            >
-              <p class="text-gray-500 text-sm font-medium">Ticket Médio</p>
-              <h3 id="kpi-ticket" class="text-2xl font-bold">R$ 0,00</h3>
-            </div>
-            <div
-              class="bg-white p-6 rounded-xl shadow-sm border-t-4 border-yellow-500"
-            >
-              <p class="text-gray-500 text-sm font-medium">Taxa de Entrega</p>
-              <h3 id="kpi-entrega" class="text-2xl font-bold">DELIVERY</h3>
-            </div>
-          </div>
-
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="bg-white p-6 rounded-xl shadow-sm">
-              <h4 class="font-bold mb-4">Vendas por Status</h4>
+            <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm">
               <canvas id="chartStatus"></canvas>
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-sm">
-              <h4 class="font-bold mb-4">Formas de Pagamento</h4>
+            <div class="bg-white p-4 md:p-6 rounded-xl shadow-sm">
               <canvas id="chartPayments"></canvas>
             </div>
           </div>
@@ -456,254 +205,27 @@
       </main>
     </div>
 
-    <div
-      id="printer-modal"
-      class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4"
-    >
-      <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-xl font-bold text-gray-800">Status da Impressora</h2>
-          <button
-            onclick="closePrinterModal()"
-            class="text-gray-400 hover:text-gray-600"
-          >
-            <i class="fas fa-times text-xl"></i>
-          </button>
-        </div>
-
-        <div class="space-y-4">
-          <div
-            class="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
-          >
-            <div class="flex items-center gap-3">
-              <div class="p-3 bg-green-100 text-green-600 rounded-lg">
-                <i class="fas fa-link"></i>
-              </div>
-              <div>
-                <p class="text-sm text-gray-500">Status</p>
-                <p class="font-bold text-green-600">Conectada / Online</p>
-              </div>
-            </div>
-            <button
-              onclick="testPrint()"
-              class="text-xs bg-white border px-3 py-1 rounded shadow-sm hover:bg-gray-50"
-            >
-              Testar
-            </button>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div class="p-3 border rounded-xl">
-              <p class="text-xs text-gray-500">Modelo</p>
-              <p class="font-semibold">Epson TM-T20X</p>
-            </div>
-            <div class="p-3 border rounded-xl">
-              <p class="text-xs text-gray-500">Interface</p>
-              <p class="font-semibold">USB (COM3)</p>
-            </div>
-          </div>
-
-          <div class="p-3 border rounded-xl bg-yellow-50 border-yellow-100">
-            <div class="flex gap-2">
-              <i class="fas fa-info-circle text-yellow-600 mt-1"></i>
-              <p class="text-sm text-yellow-700">
-                Papel está com menos de 20%. Recomendável trocar em breve.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div class="mt-8 flex gap-3">
-          <button
-            onclick="closePrinterModal()"
-            class="flex-1 py-2 bg-gray-100 text-gray-600 rounded-lg font-bold"
-          >
-            Fechar
-          </button>
-          <button
-            onclick="reconnectPrinter()"
-            class="flex-1 py-2 btn-primary rounded-lg font-bold"
-          >
-            Reiniciar
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div
-      id="admin-table-item-modal"
-      class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
-    >
-      <div
-        class="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-      >
-        <div
-          id="product-details-content"
-          class="overflow-y-auto p-6 scrollbar-hide"
-        ></div>
-
-        <div class="p-6 border-t bg-gray-50 flex gap-4">
-          <button
-            onclick="closeAdminTableModal()"
-            class="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-100 rounded-xl transition"
-          >
-            Cancelar
-          </button>
-          <button
-            id="btn-add-to-table"
-            class="flex-[2] btn-primary py-3 rounded-xl font-bold shadow-lg transform active:scale-95 transition"
-          >
-            ADICIONAR À MESA
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div
-      id="product-modal"
-      class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-    >
-      <div
-        class="bg-white rounded-2xl max-w-2xl w-full p-8 shadow-2xl overflow-y-auto max-h-[90vh]"
-      >
-        <input type="hidden" id="prod-id" value="" />
-        <h2 id="modal-title" class="text-2xl font-bold mb-6">
-          Cadastrar no Cardápio (PraFood)
-        </h2>
-
+    <div id="product-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[200] p-0 sm:p-4">
+      <div class="bg-white rounded-none sm:rounded-2xl max-w-2xl w-full h-full sm:h-auto sm:max-h-[90vh] p-6 md:p-8 shadow-2xl overflow-y-auto">
+        <h2 id="modal-title" class="text-xl md:text-2xl font-bold mb-6">Cadastrar Produto</h2>
         <form id="product-form" class="space-y-4">
-          <div class="grid grid-cols-2 gap-4">
-            <div class="col-span-2">
-              <label class="block text-sm font-bold text-gray-700"
-                >Nome do Item</label
-              >
-              <input
-                type="text"
-                id="prod-name"
-                required
-                class="w-full p-2 border rounded"
-              />
-            </div>
-            <div class="col-span-2">
-              <label class="block text-sm font-bold text-gray-700"
-                >Descrição</label
-              >
-              <textarea
-                id="prod-description"
-                rows="2"
-                class="w-full p-2 border rounded"
-              ></textarea>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="md:col-span-2">
+              <label class="block text-sm font-bold text-gray-700">Nome do Item</label>
+              <input type="text" id="prod-name" required class="w-full p-2 border rounded" />
             </div>
             <div>
-              <label class="block text-sm font-bold text-gray-700"
-                >Preço Base (R$)</label
-              >
-              <input
-                type="number"
-                step="0.01"
-                id="prod-base-price"
-                required
-                class="w-full p-2 border rounded"
-              />
+              <label class="block text-sm font-bold text-gray-700">Preço Base (R$)</label>
+              <input type="number" step="0.01" id="prod-base-price" required class="w-full p-2 border rounded" />
             </div>
             <div>
-              <label class="block text-sm font-bold text-gray-700"
-                >Categoria (ID)</label
-              >
-              <input
-                type="text"
-                id="prod-cat-id"
-                required
-                class="w-full p-2 border rounded"
-              />
-            </div>
-            <div class="col-span-2">
-              <label class="block text-sm font-bold text-gray-700"
-                >URL da Imagem</label
-              >
-              <input
-                type="url"
-                id="prod-image"
-                class="w-full p-2 border rounded"
-              />
+              <label class="block text-sm font-bold text-gray-700">Categoria (ID)</label>
+              <input type="text" id="prod-cat-id" required class="w-full p-2 border rounded" />
             </div>
           </div>
-
-          <hr />
-
-          <div class="space-y-2">
-            <div class="flex justify-between items-center">
-              <h3 class="font-bold text-gray-600">Variações (Tamanhos/SKUs)</h3>
-              <button
-                type="button"
-                onclick="addSkuRow()"
-                class="text-xs bg-gray-200 px-2 py-1 rounded"
-              >
-                + Add SKU
-              </button>
-            </div>
-            <div id="skus-container" class="space-y-2"></div>
-          </div>
-
-          <hr />
-
-          <div class="space-y-2">
-            <div class="flex justify-between items-center">
-              <h3 class="font-bold text-gray-600">
-                Grupos (Acompanhamento/Proteinas)
-              </h3>
-              <button
-                type="button"
-                onclick="addGroup()"
-                class="bg-gray-800 text-white px-2 py-1 rounded"
-              >
-                + Novo Grupo (Proteína/Acomp)
-              </button>
-            </div>
-            <div id="modifiers-container" class="space-y-2"></div>
-          </div>
-
-          <hr />
-
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-bold text-gray-700"
-                >Abre às:</label
-              >
-              <input
-                type="time"
-                id="avail-start"
-                value="18:00"
-                class="w-full p-2 border rounded"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-bold text-gray-700"
-                >Fecha às:</label
-              >
-              <input
-                type="time"
-                id="avail-end"
-                value="23:00"
-                class="w-full p-2 border rounded"
-              />
-            </div>
-          </div>
-
-          <div class="flex justify-end space-x-3 mt-6">
-            <button
-              type="button"
-              onclick="closeModal()"
-              class="px-4 py-2 text-gray-500"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              class="bg-red-600 text-white px-6 py-2 rounded font-bold"
-            >
-              Salvar no iFood
-            </button>
+          <div class="flex flex-col sm:flex-row justify-end gap-3 mt-6">
+            <button type="button" onclick="closeModal()" class="order-2 sm:order-1 px-4 py-2 text-gray-500">Cancelar</button>
+            <button type="submit" class="order-1 sm:order-2 bg-red-600 text-white px-6 py-3 rounded-lg font-bold">Salvar no iFood</button>
           </div>
         </form>
       </div>
