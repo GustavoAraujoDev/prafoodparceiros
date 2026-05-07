@@ -1349,6 +1349,13 @@ async function initTables() {
     // Busca o estado atual no servidor
     const res = await fetch(
       `https://prafoodapi.onrender.com/products/tables/status/${companyId}`,
+      {
+        method: "GET", // Método padrão, mas deixamos explícito
+        credentials: "include", // <--- ESSENCIAL: Envia os cookies/sessão para a API
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
     );
     const result = await res.json();
 
@@ -1953,6 +1960,8 @@ async function saveTablesToStorage() {
     // 3. Sincronização com o Backend
     const response = await fetch(`https://prafoodapi.onrender.com/products/tables/sync`, {
       method: "POST",
+      // ADICIONE OU VERIFIQUE ESTAS DUAS LINHAS ABAIXO:
+      credentials: "include", // Permite enviar cookies/sessão para o servidor
       headers: {
         "Content-Type": "application/json",
       },
