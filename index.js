@@ -1355,14 +1355,15 @@ async function initTables() {
     if (res.ok && result.tables) {
       // Se encontrou no banco, carrega
       tablesData = result.tables;
-      console.log("Dados das mesas carregados do servidor.");
+      alert("Dados das mesas carregados do servidor.");
     } else {
       // Se não houver no banco, tenta o backup local
       const saved = localStorage.getItem("prafood_tables_data");
       if (saved) tablesData = JSON.parse(saved);
     }
   } catch (err) {
-    console.error("Erro ao conectar com servidor, usando localStorage:", err);
+    // Substituído o console.error por alert
+    alert("Erro ao conectar com o servidor. O sistema funcionará em modo offline (dados locais).");
     const saved = localStorage.getItem("prafood_tables_data");
     if (saved) tablesData = JSON.parse(saved);
   }
