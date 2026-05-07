@@ -1088,3 +1088,708 @@ async function toggleSection(section) {
     }
   }
 }
+
+// --- ESTADO DAS MESAS ---
+let selectedTable = null;
+let tablesData = {}; // { 1: [itens], 2: [] ... }
+let allProductsGlobal = []; // Armazena os produtos vindos da API
+
+// Escudos para evitar erros de funções do cliente que não existem no Admin
+let currentProduct = null;
+function switchTab(tab) {
+  console.log("Troca de aba ignorada no Admin");
+}
+function updateTotal() {
+  console.log("Total atualizado");
+}
+
+// Inicializa 10 mesas se não existirem
+// 1. Inicializa as mesas buscando do BANCO DE DADOS
+async function initTables() {
+  // Pega o ID da empresa (certifique-se que storeTag está disponível globalmente)
+  const companyId = typeof storeTag !== "undefined" ? storeTag : "ADMIN-LOCAL";
+
+  try {
+    // Busca o estado atual no servidor
+    const res = await fetch(
+      `https://prafoodapi.onrender.com/products/tables/status/${companyId}`,
+    );
+    const result = await res.json();
+
+    if (res.ok && result.tables) {
+      // Se encontrou no banco, carrega
+      tablesData = result.tables;
+      console.log("Dados das mesas carregados do servidor.");
+    } else {
+      // Se não houver no banco, tenta o backup local
+      const saved = localStorage.getItem("prafood_tables_data");
+      if (saved) tablesData = JSON.parse(saved);
+    }
+  } catch (err) {
+    console.error("Erro ao conectar com servidor, usando localStorage:", err);
+    const saved = localStorage.getItem("prafood_tables_data");
+    if (saved) tablesData = JSON.parse(saved);
+  }
+
+  // Garante que as 10 mesas existam no objeto para evitar erros de renderização
+  for (let i = 1; i <= 10; i++) {
+    if (!tablesData[i]) tablesData[i] = [];
+  }
+
+  renderTablesGrid();
+}
+
+// Renderiza os quadradinhos das mesas
+function renderTablesGrid() {
+  const grid = document.getElementById("tables-grid");
+  if (!grid) return;
+
+  grid.innerHTML = "";
+  for (let i = 1; i <= 10; i++) {
+    const hasItems = tablesData[i].length > 0;
+    const isActive = selectedTable === i;
+
+    grid.innerHTML += `
+            <div onclick="selectTable(${i})" 
+                 class="h-20 flex flex-col items-center justify-center rounded-2xl cursor-pointer transition-all border-2 
+                 ${isActive ? "border-red-600 bg-red-50 ring-2 ring-red-100" : hasItems ? "bg-amber-50 border-amber-400 animate-pulse" : "bg-white border-gray-100 hover:border-red-200"}">
+                <span class="text-[10px] font-bold ${hasItems ? "text-amber-600" : "text-gray-400"}">MESA</span>
+                <span class="text-2xl font-black ${hasItems ? "text-amber-700" : "text-gray-800"}">${i}</span>
+                ${hasItems ? `<span class="text-[9px] font-bold text-amber-600">${tablesData[i].length} ITENS</span>` : ""}
+            </div>
+        `;
+  }
+}
+
+// Seleciona uma mesa para gerenciar
+function selectTable(num) {
+  selectedTable = num;
+  document.getElementById("table-workspace").classList.remove("hidden");
+  document.getElementById("selected-table-badge").classList.remove("hidden");
+  document.getElementById("active-table-number").innerText = num;
+
+  renderTablesGrid();
+
+  const tableMenuContainer = document.getElementById("table-menu-container");
+
+  // Verifica se os produtos já foram carregados, se não, carrega antes de renderizar
+  if (allProductsGlobal.length === 0) {
+    loadProducts().then(() => {
+      renderProductsForAdmin(allProductsGlobal, tableMenuContainer);
+    });
+  } else {
+    renderProductsForAdmin(allProductsGlobal, tableMenuContainer);
+  }
+
+  updateTableSummary();
+}
+
+// Versão simplificada do seu renderProducts para caber na lateral do Admin
+function renderProductsForAdmin(products, container) {
+  const filtered = products.filter((p) => p.status === "ACTIVE");
+
+  container.innerHTML = filtered
+    .map(
+      (p) => `
+        <div class="flex justify-between items-center p-3 border rounded-xl hover:bg-gray-50 cursor-pointer shadow-sm transition-colors mb-2" 
+             onclick='openProductDetailsForTable(${JSON.stringify(p).replace(/'/g, "&apos;")})'>
+            <div class="flex-1 pr-2">
+                <h4 class="font-bold text-gray-800 uppercase text-[10px]">${p.name}</h4>
+                <p class="text-red-600 font-bold text-xs">R$ ${Number(p.basePrice || 0).toFixed(2)}</p>
+            </div>
+            ${p.images?.[0] ? `<img src="${p.images[0]}" class="w-10 h-10 rounded-lg object-cover">` : ""}
+        </div>
+    `,
+    )
+    .join("");
+}
+
+function cancelTableSelection() {
+  selectedTable = null;
+  document.getElementById("table-workspace").classList.add("hidden");
+  document.getElementById("selected-table-badge").classList.add("hidden");
+  renderTablesGrid();
+}
+
+// Renderiza uma versão compacta do seu cardápio para o Admin clicar
+function renderTableMenu() {
+  const container = document.getElementById("table-menu-container");
+  // 'products' deve ser sua variável global que contém os itens do cardápio
+  container.innerHTML = products
+    .map(
+      (p) => `
+        <div onclick="openProductDetailsForTable('${p.id}')" class="flex items-center p-3 border rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
+            <div class="flex-1">
+                <h4 class="text-xs font-bold uppercase">${p.name}</h4>
+                <p class="text-red-600 font-bold text-xs">R$ ${p.basePrice.toFixed(2)}</p>
+            </div>
+            <i class="fas fa-plus-circle text-gray-300 text-xl"></i>
+        </div>
+    `,
+    )
+    .join("");
+}
+
+function closeAdminTableModal() {
+  document.getElementById("admin-table-item-modal").classList.add("hidden");
+}
+
+function openProductDetailsForTable(product) {
+  const modal = document.getElementById("admin-table-item-modal");
+  if (!modal) return;
+
+  // 1. Exibe o modal
+  modal.classList.remove("hidden");
+
+  // 2. Renderiza o conteúdo (sua função copiada)
+  openProductDetails(product);
+
+  // 3. Segurança: Garante que o Admin não saia da tela de mesas
+  setTimeout(() => {
+    document.getElementById("section-tables").classList.remove("hidden");
+  }, 10);
+
+  // 4. Configura o botão de confirmação do Modal
+  const btnConfirm = document.getElementById("btn-add-to-table");
+  if (btnConfirm) {
+    btnConfirm.innerText = `ADICIONAR À MESA ${selectedTable}`;
+    btnConfirm.onclick = (e) => {
+      e.preventDefault();
+      saveItemToTable(product);
+      closeAdminTableModal();
+    };
+  }
+}
+
+function filterMenuTable() {
+  const term = document
+    .getElementById("search-table-product")
+    .value.toLowerCase();
+  const filtered = allProductsGlobal.filter(
+    (p) => p.name.toLowerCase().includes(term) && p.status === "ACTIVE",
+  );
+  const container = document.getElementById("table-menu-container");
+  renderProductsForAdmin(filtered, container);
+}
+
+function saveItemToTable(product) {
+  // 1. Validações iniciais
+  const selectedSku = document.querySelector('input[name="sku-opt"]:checked');
+  if (!selectedSku)
+    return Swal.fire("Atenção", "Selecione um tamanho/opção.", "warning");
+
+  if (!selectedTable)
+    return Swal.fire("Erro", "Nenhuma mesa selecionada.", "error");
+
+  // 2. Captura de valores básicos
+  const qty = parseInt(document.getElementById("main-qty").value) || 1;
+  const priceBase = parseFloat(selectedSku.value);
+
+  // 3. Processamento de modificadores (Adicionais)
+  let modsTotal = 0;
+  let modsList = [];
+  document.querySelectorAll(".modifier-qty").forEach((input) => {
+    const val = parseInt(input.value);
+    if (val > 0) {
+      modsTotal += parseFloat(input.dataset.price) * val;
+      modsList.push(`${val}x ${input.dataset.name}`);
+    }
+  });
+
+  // 4. Montagem do objeto do item (Compatível com seu Swagger/Schema)
+  const itemComanda = {
+    productId: product._id || product.id, // Suporta ambos os formatos de ID
+    category: product.categoryId || product.category || "Geral",
+    name: product.name,
+    sku: selectedSku.dataset.name,
+    qty: qty,
+    priceUnit: priceBase + modsTotal,
+    total: (priceBase + modsTotal) * qty,
+    details: modsList.join(", "),
+    obs: document.getElementById("product-note")?.value || "",
+  };
+
+  // 5. Atualização do estado local
+  if (!tablesData[selectedTable]) tablesData[selectedTable] = [];
+  tablesData[selectedTable].push(itemComanda);
+
+  // 6. Atualização da UI
+  updateTableSummary();
+  renderTablesGrid();
+
+  // 7. Sincronização com LocalStorage e MongoDB (A função que criamos antes)
+  saveTablesToStorage();
+
+  // 8. Feedback e fechamento do modal
+  closeAdminTableModal();
+
+  // Toast opcional para confirmar que foi para a mesa
+  const Toast = Swal.mixin({
+    toast: true,
+    position: "top-end",
+    showConfirmButton: false,
+    timer: 1500,
+    timerProgressBar: true,
+  });
+
+  Toast.fire({
+    icon: "success",
+    title: `Item adicionado à Mesa ${selectedTable}`,
+  });
+}
+
+function updateTableSummary() {
+  const container = document.getElementById("current-table-items");
+  const items = tablesData[selectedTable] || [];
+  let total = 0;
+
+  container.innerHTML = items
+    .map((item, index) => {
+      total += item.total;
+      return `
+            <div class="p-3 bg-gray-50 rounded-xl border border-gray-100 text-xs">
+                <div class="flex justify-between items-start mb-1">
+                    <span class="font-bold text-gray-800">${item.qty}x ${item.name}</span>
+                    <span class="font-black">R$ ${item.total.toFixed(2)}</span>
+                </div>
+                <p class="text-gray-500">${item.sku} ${item.details ? " • " + item.details : ""}</p>
+                ${item.obs ? `<p class="text-red-500 italic mt-1 font-medium">Obs: ${item.obs}</p>` : ""}
+                <button onclick="removeItemFromTable(${index})" class="mt-2 text-red-500 font-bold uppercase text-[9px] hover:underline">Remover</button>
+            </div>
+        `;
+    })
+    .join("");
+
+  if (items.length === 0) {
+    container.innerHTML =
+      '<div class="text-center py-6"><i class="fas fa-receipt text-gray-200 text-3xl mb-2"></i><p class="text-gray-400 text-xs font-medium">Comanda vazia</p></div>';
+  }
+
+  document.getElementById("table-total").innerText = `R$ ${total.toFixed(2)}`;
+  document.getElementById("table-subtotal").innerText =
+    `R$ ${total.toFixed(2)}`;
+}
+
+function removeItemFromTable(index) {
+  tablesData[selectedTable].splice(index, 1);
+  saveTablesToStorage(); // <--- ADICIONE ESTA LINHA
+  updateTableSummary();
+  renderTablesGrid();
+}
+
+async function closeTableAccount() {
+  const itemsMesa = tablesData[selectedTable];
+
+  if (!itemsMesa || itemsMesa.length === 0) {
+    return Swal.fire({ icon: "error", title: "Mesa sem itens!" });
+  }
+
+  const result = await Swal.fire({
+    title: `Fechar Mesa ${selectedTable}?`,
+    text: "Confirma o encerramento da conta e impressão?",
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonText: "Sim, Finalizar!",
+    confirmButtonColor: "#ea1d2c",
+  });
+
+  if (!result.isConfirmed) return;
+
+  // Pegamos o ID do Admin logado para satisfazer a auditoria do servidor
+  // currentUser costuma vir da sua função restaurarSessao()
+  const adminId = currentUser?.id || currentUser?.sub || currentUser?._id;
+  const subtotal = itemsMesa.reduce((sum, item) => sum + item.total, 0);
+
+  // MONTAGEM DO OBJETO COMPATÍVEL COM SEU SCHEMA/CLASSE
+  const pedidoMesa = {
+    companyId: typeof storeTag !== "undefined" ? storeTag : "ADMIN-LOCAL",
+    userId: adminId, // 🔥 Preenche o userId com o ID do Admin
+    // userId: null, // Pode omitir ou enviar null, já que no Schema é opcional agora
+    cliente: {
+      nome: `Mesa ${selectedTable}`,
+      telefone: "000000000", // Valor padrão para passar na validação se necessário
+      email: "atendimento@local.com",
+    },
+    itens: itemsMesa.map((item) => ({
+      productId: item.productId,
+      name: item.name,
+      category: item.category || "Geral", // Campo exigido no seu itemSchema
+      size: item.sku,
+      quantity: item.qty,
+      unitPrice: item.priceUnit, // Nome exato do seu Schema
+      totalPrice: item.total, // Nome exato do seu Schema
+      extras: item.details ? [item.details] : [], // Seu Schema espera Array de Strings
+      notes: item.obs,
+    })),
+    pagamento: {
+      metodo: "BALCÃO",
+      total: subtotal,
+      status: "PAID", // Como está fechando no balcão, já marcamos como pago
+    },
+    entrega: {
+      tipo: "DINE_IN", // Nome exato do seu enum na Classe/Schema
+      mesa: selectedTable,
+      taxaEntrega: 0,
+    },
+    status: "CONFIRMED", // Inicia como confirmado para ir direto para a cozinha/impressão
+  };
+
+  try {
+    // 1. Salva no Banco via sua API
+    const pedidoSalvo = await criarPedidoNoSistema(pedidoMesa);
+
+    // 2. Chama a impressão usando o ID retornado pelo banco
+    if (typeof printOrder === "function") {
+      await printOrder(pedidoSalvo.id || pedidoSalvo._id);
+    }
+
+    // 3. Limpa os dados locais (F5 não trará os itens de volta pois a mesa fechou)
+    tablesData[selectedTable] = [];
+    if (typeof saveTablesToStorage === "function") saveTablesToStorage();
+
+    renderTablesGrid();
+    cancelTableSelection();
+
+    Swal.fire({
+      icon: "success",
+      title: "Conta Fechada!",
+      text: "O pedido foi registrado e enviado para a impressora.",
+      timer: 2000,
+      showConfirmButton: false,
+    });
+  } catch (err) {
+    Swal.fire({
+      icon: "error",
+      title: "Erro ao fechar mesa",
+      text: err.message,
+    });
+  }
+}
+
+async function criarPedidoNoSistema(pedidoFinal) {
+  Swal.fire({
+    title: "Processando pedido...",
+    didOpen: () => Swal.showLoading(),
+    allowOutsideClick: false,
+  });
+
+  const res = await fetch(`https://prafoodapi.onrender.com/pedidos`, {
+    // Usando a constante de ambiente que definimos antes
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(pedidoFinal),
+  });
+
+  const result = await res.json();
+
+  if (!res.ok) {
+    throw new Error(result.error || result.message || "Erro ao salvar pedido.");
+  }
+
+  return result.data; // Retorna o pedido criado (contendo o ID gerado pelo banco)
+}
+
+function openProductDetails(product) {
+  currentProduct = product;
+  switchTab("details");
+  const content = document.getElementById("product-details-content");
+
+  // 1. Renderizar SKUs (Tamanhos)
+  const skusHTML = (product.skus || [])
+    .map((sku, index) => {
+      const isOutOfStock = sku.stock <= 0;
+      return `
+            <label class="flex-1 ${isOutOfStock ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}">
+                <input type="radio" name="sku-opt" value="${sku.price}" 
+                    class="peer hidden" 
+                    data-name="${sku.name}"
+                    data-stock="${sku.stock}"
+                    ${index === 0 && !isOutOfStock ? "checked" : ""} 
+                    ${isOutOfStock ? "disabled" : ""}
+                    onchange="renderAttributes(${index}); updateTotal(); resetMainQty()">
+                <div class="p-3 border rounded-xl text-center peer-checked:border-red-600 peer-checked:bg-red-50 transition-all">
+                    <span class="block font-bold text-xs uppercase">${sku.name}</span>
+                    <span class="block text-xs text-gray-500 font-normal">R$ ${sku.price.toFixed(2)}</span>
+                    ${isOutOfStock ? '<span class="text-[10px] text-red-500 font-bold">ESGOTADO</span>' : ""}
+                </div>
+            </label>
+        `;
+    })
+    .join("");
+
+  // 2. Renderizar Grupos de Modificadores Dinamicamente
+  const modifiersHTML = (product.modifiers || [])
+    .map((group, groupIndex) => {
+      // FILTRO: Só mostra itens ATIVOS
+      const activeItems = group.items.filter(
+        (item) => item.status === "ACTIVE",
+      );
+
+      if (activeItems.length === 0) return ""; // Se não tiver nada ativo no dia, nem mostra o grupo
+
+      return `
+        <div class="mt-6 border-t pt-4">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-bold text-xs text-gray-500 uppercase">${groupIndex + 2}. ${group.name}</h3>
+                <span class="text-[10px] bg-gray-100 px-2 py-1 rounded text-gray-400">
+                    Min: ${group.min} / Máx: ${group.max}
+                </span>
+            </div>
+            <div class="space-y-2">
+                ${activeItems
+                  .map(
+                    (item, itemIndex) => `
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                        <div>
+                            <span class="text-sm font-medium text-gray-700">${item.name}</span>
+                            ${item.price > 0 ? `<span class="block text-[10px] text-gray-400">+ R$ ${item.price.toFixed(2)}</span>` : ""}
+                        </div>
+                        <div class="flex items-center gap-3 bg-white rounded-lg border p-1">
+                            <button onclick="updateModifierQty('${groupIndex}', '${itemIndex}', -1)" class="w-7 h-7 text-red-600 font-bold">-</button>
+                            <input type="number" 
+                                id="mod-${groupIndex}-${itemIndex}" 
+                                value="0" 
+                                data-price="${item.price}" 
+                                data-name="${item.name}" 
+                                data-group="${group.name}"
+                                data-max="${group.max}"
+                                class="modifier-qty w-6 text-center text-sm font-bold border-none bg-transparent" readonly>
+                            <button onclick="updateModifierQty('${groupIndex}', '${itemIndex}', 1)" class="w-7 h-7 text-red-600 font-bold">+</button>
+                        </div>
+                    </div>
+                `,
+                  )
+                  .join("")}
+            </div>
+        </div>
+      `;
+    })
+    .join("");
+
+  content.innerHTML = `
+        <div class="space-y-6 pb-20">
+            ${product.images?.[0] ? `<img src="${product.images[0]}" class="w-full h-48 object-cover rounded-xl shadow-sm">` : ""}
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800">${product.name}</h2>
+                <p class="text-gray-500 text-sm mt-1">${product.description || ""}</p>
+            </div>
+
+            <div>
+                <h3 class="font-bold text-xs text-gray-500 uppercase mb-3">1. Escolha o Tamanho</h3>
+                <div class="flex gap-2">${skusHTML}</div>
+            </div>
+
+            <div id="sku-attributes-container"></div>
+            
+            <div id="modifiers-dynamic-container">
+                ${modifiersHTML}
+            </div>
+
+            <div class="flex items-center justify-between pt-4 border-t">
+                <span class="font-bold text-gray-700">Quantidade do pedido</span>
+                <div class="flex items-center gap-4 bg-gray-100 rounded-xl p-1">
+                    <button onclick="updateQty('main-qty', -1)" class="w-10 h-10 bg-white rounded-lg shadow-sm text-xl font-bold">-</button>
+                    <input type="number" id="main-qty" value="1" class="w-8 text-center font-bold bg-transparent border-none" readonly>
+                    <button onclick="updateQty('main-qty', 1)" class="w-10 h-10 bg-white rounded-lg shadow-sm text-xl font-bold">+</button>
+                </div>
+            </div>
+
+            <div class="pt-4">
+                <h3 class="font-bold text-xs text-gray-500 uppercase mb-2">Alguma observação?</h3>
+                <textarea id="product-note" placeholder="Ex: Tirar cebola..." class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-red-600 outline-none resize-none" rows="3"></textarea>
+            </div>
+        </div>
+    `;
+
+  renderAttributes(0);
+}
+
+function updateModifierQty(groupIndex, itemIndex, delta) {
+  const id = `mod-${groupIndex}-${itemIndex}`;
+  const input = document.getElementById(id);
+  const maxGroup = parseInt(input.dataset.max);
+
+  // Contar quanto já foi selecionado NESSE grupo
+  const groupInputs = document.querySelectorAll(`[id^="mod-${groupIndex}-"]`);
+  let currentGroupTotal = 0;
+  groupInputs.forEach((inp) => (currentGroupTotal += parseInt(inp.value)));
+
+  let newVal = parseInt(input.value) + delta;
+
+  if (newVal < 0) newVal = 0;
+
+  // Validar se ultrapassa o máximo do grupo (ex: Max 4 acompanhamentos)
+  if (delta > 0 && currentGroupTotal >= maxGroup) {
+    alert(`O limite deste grupo é de ${maxGroup} itens.`);
+    return;
+  }
+
+  input.value = newVal;
+  if (typeof updateTotal === "function") updateTotal();
+}
+
+function renderAttributes(skuIndex) {
+  const container = document.getElementById("sku-attributes-container");
+  const sku = currentProduct.skus[skuIndex];
+
+  if (!sku || !sku.attributes) {
+    container.innerHTML = "";
+    return;
+  }
+
+  // Pegamos todos os valores (ex: "carne", "frango") dos atributos
+  const values = Object.values(sku.attributes);
+
+  // Geramos os botões. Todos compartilham o name="selected-flavor"
+  // para que o usuário só possa escolher UM.
+  container.innerHTML = `
+        <div class="mt-4">
+            <h3 class="font-bold text-xs text-gray-500 uppercase mb-2">Escolha o Sabor</h3>
+            <div class="flex flex-wrap gap-2">
+                ${values
+                  .map(
+                    (val, i) => `
+                    <label class="cursor-pointer">
+                        <input type="radio" 
+                               name="selected-flavor" 
+                               onchange="updateTotal()"
+                               value="${val}" 
+                               class="peer hidden" 
+                               ${i === 0 ? "checked" : ""}>
+                        <div class="px-4 py-2 border rounded-full peer-checked:bg-red-600 peer-checked:text-white transition-all text-sm">
+                            ${val}
+                        </div>
+                    </label>
+                `,
+                  )
+                  .join("")}
+            </div>
+        </div>
+    `;
+}
+
+function updateQty(id, delta) {
+  const input = document.getElementById(id);
+  let newVal = parseInt(input.value) + delta;
+
+  if (id === "main-qty") {
+    // Busca o SKU selecionado para saber o limite de estoque
+    const selectedSku = document.querySelector('input[name="sku-opt"]:checked');
+    const maxStock = selectedSku ? parseInt(selectedSku.dataset.stock) : 99;
+
+    if (newVal < 1) newVal = 1;
+    if (newVal > maxStock) {
+      Toast.fire({
+        icon: "warning",
+        title: `Ops! Só temos ${maxStock} unidades em estoque.`,
+      });
+      newVal = maxStock;
+    }
+  } else {
+    // Lógica para adicionais (modifiers) costuma ser livre ou limitada por regra de negócio
+    if (newVal < 0) newVal = 0;
+  }
+
+  input.value = newVal;
+  if (typeof updateTotal === "function") updateTotal();
+}
+
+// Função auxiliar para resetar a quantidade ao trocar de tamanho
+function resetMainQty() {
+  const input = document.getElementById("main-qty");
+  if (input) input.value = 1;
+}
+
+/**
+ * Salva o estado das mesas tanto no LocalStorage (backup rápido)
+ * quanto no Banco de Dados (sincronização remota).
+ */
+async function saveTablesToStorage() {
+  // 1. Backup imediato no navegador (evita perda se a internet oscilar)
+  localStorage.setItem("prafood_tables_data", JSON.stringify(tablesData));
+
+  // 2. Identificação da empresa (vinda da sua variável global ou config)
+  const companyId = typeof storeTag !== "undefined" ? storeTag : "ADMIN-LOCAL";
+
+  try {
+    // 3. Sincronização com o Backend
+    const response = await fetch(`https://prafoodapi.onrender.com/products/tables/sync`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        companyId: companyId,
+        tables: tablesData, // Envia o objeto com todas as 10 mesas
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "Erro ao sincronizar com o servidor");
+    }
+
+    console.log("✅ Mesas sincronizadas no banco de dados com sucesso.");
+  } catch (err) {
+    // Se falhar (ex: servidor offline), o sistema continua funcionando com o LocalStorage
+    console.warn("⚠️ Falha na sincronização remota:", err.message);
+
+    // Opcional: Avisar o usuário com um toast discreto
+    if (typeof Swal !== "undefined") {
+      const Toast = Swal.mixin({
+        toast: true,
+        position: "bottom-end",
+        showConfirmButton: false,
+        timer: 3000,
+      });
+      Toast.fire({
+        icon: "warning",
+        title: "Modo Offline: Salvo apenas localmente",
+      });
+    }
+  }
+}
+
+// Funções de Controle do Modal da Impressora
+function openPrinterModal() {
+  document.getElementById("printer-modal").classList.remove("hidden");
+}
+
+function closePrinterModal() {
+  document.getElementById("printer-modal").classList.add("hidden");
+}
+
+function testPrint() {
+  Swal.fire({
+    title: "Imprimindo teste...",
+    text: "Aguarde a saída do papel na impressora térmica.",
+    icon: "info",
+    timer: 2000,
+    showConfirmButton: false,
+    toast: true,
+    position: "top-end",
+  });
+}
+
+function reconnectPrinter() {
+  const btn = event.target;
+  btn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Conectando...';
+  btn.disabled = true;
+
+  setTimeout(() => {
+    btn.innerHTML = "Reiniciar";
+    btn.disabled = false;
+    Swal.fire("Sucesso", "Impressora reinicializada com sucesso!", "success");
+  }, 1500);
+}
+
+// Fechar modal ao clicar fora dele
+window.onclick = function (event) {
+  const modal = document.getElementById("printer-modal");
+  if (event.target == modal) {
+    closePrinterModal();
+  }
+};
+
