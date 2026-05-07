@@ -1970,20 +1970,23 @@ async function saveTablesToStorage() {
 
     console.log("✅ Mesas sincronizadas no banco de dados com sucesso.");
   } catch (err) {
-    // Se falhar (ex: servidor offline), o sistema continua funcionando com o LocalStorage
-    console.warn("⚠️ Falha na sincronização remota:", err.message);
+    // Log detalhado no console para você (desenvolvedor)
+    console.warn("⚠️ Detalhes do erro de sincronização:", err);
 
-    // Opcional: Avisar o usuário com um toast discreto
     if (typeof Swal !== "undefined") {
       const Toast = Swal.mixin({
         toast: true,
         position: "bottom-end",
         showConfirmButton: false,
-        timer: 3000,
+        timer: 5000, // Aumentei o tempo para dar tempo de ler o erro
+        timerProgressBar: true,
       });
+
+      // Aqui ele mostra "Modo Offline" e o motivo real logo abaixo
       Toast.fire({
         icon: "warning",
-        title: "Modo Offline: Salvo apenas localmente",
+        title: "Sincronização Falhou",
+        text: `Motivo: ${err.message}`, // <--- EXIBE O ERRO REAL AQUI
       });
     }
   }
