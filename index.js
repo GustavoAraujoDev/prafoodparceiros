@@ -1542,7 +1542,7 @@ function saveItemToTable(product) {
 
   // 4. Montagem do objeto do item (Compatível com seu Swagger/Schema)
   const itemComanda = {
-    productId: product._id || product.id, // Suporta ambos os formatos de ID
+    productId: product.id || "ID-NAO-ENCONTRADO", // Suporta ambos os formatos de ID
     category: product.categoryId || product.category || "Geral",
     name: product.name,
     sku: selectedSku.dataset.name,
