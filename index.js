@@ -1313,7 +1313,7 @@ async function toggleSection(section) {
   if (section === "dashboard") {
     loadDashboardData();
     try {
-      const res = await fetch(`http://127.0.0.1:3000/pedidos`, {
+      const res = await fetch(`https://prafoodapi.onrender.com/pedidos`, {
         method: "GET",
         credentials: "include",
       });
@@ -1353,16 +1353,15 @@ async function initTables() {
         method: "GET", // Método padrão, mas deixamos explícito
         credentials: "include", // <--- ESSENCIAL: Envia os cookies/sessão para a API
         headers: {
-          "Content-Type": "application/json"
-        }
-      }
+          "Content-Type": "application/json",
+        },
+      },
     );
     const result = await res.json();
 
     if (res.ok && result.tables) {
       // Se encontrou no banco, carrega
       tablesData = result.tables;
-      
     } else {
       // Se não houver no banco, tenta o backup local
       const saved = localStorage.getItem("prafood_tables_data");
@@ -1370,7 +1369,9 @@ async function initTables() {
     }
   } catch (err) {
     // Substituído o console.error por alert
-    alert("Erro ao conectar com o servidor. O sistema funcionará em modo offline (dados locais).");
+    alert(
+      "Erro ao conectar com o servidor. O sistema funcionará em modo offline (dados locais).",
+    );
     const saved = localStorage.getItem("prafood_tables_data");
     if (saved) tablesData = JSON.parse(saved);
   }
