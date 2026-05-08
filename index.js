@@ -1,4 +1,4 @@
-const API_URL = "https://pra-food-api.vercel.app/products";
+const API_URL = "https://prafoodapi.onrender.com/products";
 // Configuração do som de alerta
 const audioAlerta = new Audio(
   "https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3",
@@ -646,7 +646,7 @@ function closeModal() {
 // --- GESTÃO DE PEDIDOS ---
 async function loadOrders() {
   try {
-    const res = await fetch(`https://pra-food-api.vercel.app/pedidos`, {
+    const res = await fetch(`https://prafoodapi.onrender.com/pedidos`, {
       method: "GET",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -746,7 +746,7 @@ async function updateOrderStatus(orderId, newStatus) {
 
   try {
     const response = await fetch(
-      `https://pra-food-api.vercel.app/pedidos/${orderId}/status`,
+      `https://prafoodapi.onrender.com/pedidos/${orderId}/status`,
       {
         method: "PUT",
         credentials: "include",
@@ -901,7 +901,7 @@ async function printOrder(id) {
   });
 
   try {
-    const response = await fetch("https://pra-food-api.vercel.app/pedidos/imprimir", {
+    const response = await fetch("https://prafoodapi.onrender.com/pedidos/imprimir", {
       method: "POST",
       credentials: "include",
       headers: {
@@ -1021,7 +1021,7 @@ let allOrdersData = []; // Variável global para guardar os pedidos sem precisar
 
 async function loadDashboardData() {
   try {
-    const res = await fetch("https://pra-food-api.vercel.app/pedidos", {
+    const res = await fetch("https://prafoodapi.onrender.com/pedidos", {
       method: "GET",
       credentials: "include",
       headers: {
@@ -1078,7 +1078,7 @@ setInterval(async () => {
       primeiraBusca = false;
     }
 
-    const res = await fetch("https://pra-food-api.vercel.app/pedidos/pendentes", {
+    const res = await fetch("https://prafoodapi.onrender.com/pedidos/pendentes", {
       method: "GET",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -1348,7 +1348,7 @@ async function initTables() {
   try {
     // Busca o estado atual no servidor
     const res = await fetch(
-      `https://pra-food-api.vercel.app/products/tables/status/${companyId}`,
+      `https://prafoodapi.onrender.com/products/tables/status/${companyId}`,
       {
         method: "GET", // Método padrão, mas deixamos explícito
         credentials: "include", // <--- ESSENCIAL: Envia os cookies/sessão para a API
@@ -1718,7 +1718,7 @@ async function criarPedidoNoSistema(pedidoFinal) {
     allowOutsideClick: false,
   });
 
-  const res = await fetch(`https://pra-food-api.vercel.app/pedidos`, {
+  const res = await fetch(`https://prafoodapi.onrender.com/pedidos`, {
     // Usando a constante de ambiente que definimos antes
     method: "POST",
     credentials: "include",
@@ -1959,7 +1959,7 @@ async function saveTablesToStorage() {
 
   try {
     // 3. Sincronização com o Backend
-    const response = await fetch(`https://pra-food-api.vercel.app/products/tables/sync`, {
+    const response = await fetch(`https://prafoodapi.onrender.com/products/tables/sync`, {
       method: "POST",
       // ADICIONE OU VERIFIQUE ESTAS DUAS LINHAS ABAIXO:
       credentials: "include", // Permite enviar cookies/sessão para o servidor
