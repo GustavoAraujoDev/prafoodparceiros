@@ -1540,6 +1540,7 @@ function saveItemToTable(product) {
     }
   });
 
+  alert(product.id);
   // 4. Montagem do objeto do item (Compatível com seu Swagger/Schema)
   const itemComanda = {
     productId: product.id || "ID-NAO-ENCONTRADO", // Suporta ambos os formatos de ID
