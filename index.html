@@ -45,97 +45,193 @@
   <body>
     <div
       id="login-screen"
-      class="min-h-screen flex items-center justify-center bg-white"
+      class="min-h-screen flex flex-col md:flex-row bg-[#f7f7f7] font-sans"
     >
-      <div class="max-w-md w-full p-8 text-center">
-        <img src="../logoPraFood.jpeg" alt="iFood" class="w-41 mx-auto mb-8" />
-        <form id="login-form" class="space-y-4 text-left">
-          <div>
-            <label class="block text-sm font-medium text-gray-700"
-              >E-mail</label
+      <!-- Lado Esquerdo: Banner Decorativo (Estilo Portal do Parceiro) -->
+      <div
+        class="hidden md:flex md:w-1/2 bg-[#ea1d2c] items-center justify-center p-12 relative overflow-hidden"
+      >
+        <div class="z-10 text-white">
+          <h1 class="text-4xl font-black mb-4">Bem-vindo, Parceiro!</h1>
+          <p class="text-xl opacity-90">
+            Gerencie seu negócio com a maior plataforma de delivery da América
+            Latina.
+          </p>
+        </div>
+        <!-- Círculos decorativos de fundo -->
+        <div
+          class="absolute -bottom-20 -left-20 w-64 h-64 bg-white opacity-10 rounded-full"
+        ></div>
+        <div
+          class="absolute -top-10 -right-10 w-96 h-96 bg-black opacity-5 rounded-full"
+        ></div>
+      </div>
+
+      <!-- Lado Direito: Formulário de Login -->
+      <div class="flex-1 flex items-center justify-center p-8">
+        <div class="max-w-md w-full">
+          <!-- Logo e Título -->
+          <div class="text-left mb-10">
+            <img
+              src="../logoPraFood.jpeg"
+              alt="iFood Parceiros"
+              class="w-32 mb-6"
+            />
+            <h2 class="text-3xl font-bold text-gray-800 tracking-tight">
+              Login do Parceiro
+            </h2>
+            <p class="text-gray-500 mt-2">
+              Acesse o seu painel de gerenciamento.
+            </p>
+          </div>
+
+          <form id="login-form" class="space-y-6">
+            <!-- Campo E-mail -->
+            <div>
+              <label class="block text-sm font-bold text-gray-700 mb-2"
+                >E-mail ou Usuário</label
+              >
+              <input
+                type="email"
+                id="login-email"
+                placeholder="seu@email.com"
+                required
+                class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg outline-none transition-all focus:border-[#ea1d2c] focus:ring-1 focus:ring-[#ea1d2c]"
+              />
+            </div>
+
+            <!-- Campo Senha -->
+            <div>
+              <div class="flex justify-between mb-2">
+                <label class="text-sm font-bold text-gray-700">Senha</label>
+                <a
+                  href="#"
+                  class="text-sm font-semibold text-[#ea1d2c] hover:underline"
+                  >Esqueceu a senha?</a
+                >
+              </div>
+              <input
+                type="password"
+                id="login-pass"
+                placeholder="••••••••"
+                required
+                class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg outline-none transition-all focus:border-[#ea1d2c] focus:ring-1 focus:ring-[#ea1d2c]"
+              />
+            </div>
+
+            <!-- Botão Entrar -->
+            <button
+              type="submit"
+              class="w-full bg-[#ea1d2c] hover:bg-[#d91a29] text-white py-3.5 rounded-lg font-bold text-base transition-colors shadow-md shadow-red-100"
             >
-            <input
-              type="email"
-              id="login-email"
-              required
-              class="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-red-500"
-            />
+              ACESSAR PORTAL
+            </button>
+          </form>
+
+          <!-- Rodapé do Card -->
+          <div class="mt-10 pt-6 border-t border-gray-200">
+            <p class="text-gray-600 text-sm">
+              Ainda não é parceiro?
+              <a href="#" class="font-bold text-[#ea1d2c] ml-1"
+                >Cadastre seu restaurante</a
+              >
+            </p>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Senha</label>
-            <input
-              type="password"
-              id="login-pass"
-              required
-              class="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-red-500"
-            />
-          </div>
-          <button
-            type="submit"
-            class="w-full btn-primary py-3 rounded-lg font-bold text-lg"
-          >
-            Entrar
-          </button>
-        </form>
+        </div>
       </div>
     </div>
 
     <div id="main-app" class="hidden min-h-screen flex">
-      <aside class="w-64 bg-white border-r hidden md:block p-6">
-        <img src="../logoPraFood.jpeg" alt="PraFood" class="w-25 mb-15" />
-        <nav class="space-y-4">
+      <aside
+        class="w-64 bg-white border-r hidden md:flex flex-col h-screen sticky top-0 p-0"
+      >
+        <!-- Header da Sidebar com Logo -->
+        <div class="p-6 mb-2">
+          <img
+            src="../logoPraFood.jpeg"
+            alt="PraFood"
+            class="w-32 transition-transform hover:scale-105"
+          />
+        </div>
+
+        <!-- Navegação Principal -->
+        <nav class="flex-1 px-4 space-y-1">
+          <!-- Item Ativo (Exemplo: Dashboard) -->
           <a
             href="#"
-            id="nav-menu"
-            onclick="toggleSection('menu')"
-            class="block font-bold text-red-600 border-l-4 border-red-600 pl-3"
-            >🍔 Cardápio</a
+            id="nav-dashboard"
+            onclick="toggleSection('dashboard')"
+            class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-lg bg-red-50 text-red-600 transition-all group"
           >
+            <span class="text-xl">📊</span>
+            <span>Dashboard</span>
+          </a>
 
+          <!-- Item Padrão -->
           <a
             href="#"
             id="nav-orders"
             onclick="toggleSection('orders')"
-            class="block text-gray-500 hover:text-red-500 pl-4 transition"
-            >📋 Pedidos</a
+            class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-all"
           >
+            <span class="text-xl opacity-70">📋</span>
+            <span>Pedidos</span>
+            <!-- Badge de novos pedidos (opcional) -->
+            <span
+              class="ml-auto bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold"
+              >5</span
+            >
+          </a>
+
+          <a
+            href="#"
+            id="nav-menu"
+            onclick="toggleSection('menu')"
+            class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-all"
+          >
+            <span class="text-xl opacity-70">🍔</span>
+            <span>Cardápio</span>
+          </a>
 
           <a
             href="#"
             id="nav-tables"
             onclick="toggleSection('tables')"
-            class="block text-gray-500 hover:text-red-500 pl-4 transition"
+            class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-all"
           >
-            <i class="fas fa-table mr-2"></i> Gestão de Mesas
+            <span class="text-xl opacity-70">🪑</span>
+            <span>Gestão de Mesas</span>
           </a>
 
-          <a
-            href="#"
-            id="nav-dashboard"
-            onclick="toggleSection('dashboard')"
-            class="block text-gray-500 hover:text-red-500 pl-4 transition"
-            >📊 Dashboard</a
-          >
+          <!-- Divisor -->
+          <div class="my-6 border-t border-gray-100 mx-4"></div>
 
+          <!-- Seção de Utilidades -->
           <button
             onclick="openPrinterModal()"
-            class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition text-gray-700 font-medium"
+            class="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100 transition-all group"
           >
-            <i class="fas fa-print"></i>
+            <div class="relative">
+              <i class="fas fa-print text-lg opacity-70"></i>
+              <span
+                id="printer-dot"
+                class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-white animate-pulse"
+              ></span>
+            </div>
             <span>Impressora</span>
-            <span
-              id="printer-dot"
-              class="w-2 h-2 rounded-full bg-green-500 animate-pulse"
-            ></span>
           </button>
-
-          <a
-            href="#"
-            onclick="logout()"
-            class="block text-gray-400 hover:text-red-500 pl-4 mt-20 transition"
-            >Sair</a
-          >
         </nav>
+
+        <!-- Rodapé da Sidebar (Usuário e Sair) -->
+        <div class="p-4 border-t border-gray-100">
+          <button
+            onclick="logout()"
+            class="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+          >
+            <i class="fas fa-sign-out-alt text-lg"></i>
+            <span>Sair da conta</span>
+          </button>
+        </div>
       </aside>
 
       <main class="flex-1 p-8">
@@ -339,10 +435,11 @@
               >
                 <option value="all">Todos os Status</option>
                 <option value="PREPARING">Em Preparo</option>
+                <option value="CREATED">Pendentes</option>
                 <option value="READY">Pronto para Retirada</option>
                 <option value="OUT_FOR_DELIVERY">Saiu para Entrega</option>
-                <option value="CONCLUDED">Concluído</option>
-                <option value="CANCELLED">Cancelado</option>
+                <option value="DELIVERED">Concluído</option>
+                <option value="CANCELED">Cancelado</option>
               </select>
             </div>
             <div>
@@ -709,39 +806,60 @@
       </div>
     </div>
 
+    <!-- Bottom Navigation Mobile -->
     <div
-      class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center py-3 z-[200] shadow-[0_-2px_10px_rgba(0,0,0,0.05)]"
+      class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 flex justify-around items-end pb-safe pt-2 px-2 z-[200] shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
     >
-      <button
-        onclick="toggleSection('menu')"
-        class="flex flex-col items-center gap-1 text-red-600"
-      >
-        <i class="fas fa-hamburger text-xl"></i>
-        <span class="text-[10px] font-bold">Cardápio</span>
-      </button>
-
+      <!-- Item Ativo (Exemplo: Pedidos) -->
       <button
         onclick="toggleSection('orders')"
-        class="flex flex-col items-center gap-1 text-gray-400 hover:text-red-600"
+        class="flex-1 flex flex-col items-center justify-center gap-1 py-2 transition-all active:scale-90"
       >
-        <i class="fas fa-clipboard-list text-xl"></i>
-        <span class="text-[10px] font-bold">Pedidos</span>
+        <div class="relative">
+          <i class="fas fa-clipboard-list text-xl text-[#ea1d2c]"></i>
+          <!-- Badge de Alerta para novos pedidos -->
+          <span
+            class="absolute -top-1 -right-2 bg-[#ea1d2c] text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full border-2 border-white font-black"
+            >3</span
+          >
+        </div>
+        <span class="text-[11px] font-bold text-[#ea1d2c]">Pedidos</span>
       </button>
 
+      <!-- Item: Cardápio -->
+      <button
+        onclick="toggleSection('menu')"
+        class="flex-1 flex flex-col items-center justify-center gap-1 py-2 text-gray-400 transition-all active:scale-90"
+      >
+        <i class="fas fa-utensils text-xl"></i>
+        <span class="text-[11px] font-medium italic">Cardápio</span>
+      </button>
+
+      <!-- Item: Mesas -->
       <button
         onclick="toggleSection('tables')"
-        class="flex flex-col items-center gap-1 text-gray-400 hover:text-red-600"
+        class="flex-1 flex flex-col items-center justify-center gap-1 py-2 text-gray-400 transition-all active:scale-90"
       >
-        <i class="fas fa-table text-xl"></i>
-        <span class="text-[10px] font-bold">Mesas</span>
+        <i class="fas fa-th-large text-xl"></i>
+        <span class="text-[11px] font-medium">Mesas</span>
       </button>
 
+      <!-- Item: Dashboard -->
       <button
         onclick="toggleSection('dashboard')"
-        class="flex flex-col items-center gap-1 text-gray-400 hover:text-red-600"
+        class="flex-1 flex flex-col items-center justify-center gap-1 py-2 text-gray-400 transition-all active:scale-90"
       >
-        <i class="fas fa-chart-bar text-xl"></i>
-        <span class="text-[10px] font-bold">Dashboard</span>
+        <i class="fas fa-chart-line text-xl"></i>
+        <span class="text-[11px] font-medium">Dashboard</span>
+      </button>
+
+      <!-- Botão de Mais/Ajustes (Comum em Apps de Gestão) -->
+      <button
+        onclick="openSettings()"
+        class="flex-1 flex flex-col items-center justify-center gap-1 py-2 text-gray-400 transition-all active:scale-90"
+      >
+        <i class="fas fa-bars text-xl"></i>
+        <span class="text-[11px] font-medium">Mais</span>
       </button>
     </div>
 
