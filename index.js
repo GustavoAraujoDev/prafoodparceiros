@@ -1115,7 +1115,7 @@ setInterval(async () => {
   } catch (err) {
     console.error("❌ Erro no monitor:", err);
   }
-}, 5000);
+}, 45000);
 
 // Lógica de Filtragem do Cardápio
 function filterMenu() {
