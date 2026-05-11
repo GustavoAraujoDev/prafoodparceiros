@@ -72,6 +72,7 @@ async function fetchUserData() {
     if (!response.ok) throw new Error("Erro ao carregar perfil");
 
     currentUser = await response.json();
+    renderStoreStatus(currentUser);
   } catch (err) {
     console.error("Erro ao buscar dados do usuário:", err);
   }
@@ -283,6 +284,68 @@ async function toggleStatus(productId, currentStatus) {
   }
 }
 
+async function toggleUserStatus(userId, currentStatus) {
+  // Conforme o seu Schema, usamos 'ACTIVE' (maiúsculo) e 'inactive' (minúsculo)
+  const newStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+
+  try {
+    const response = await fetch(`${API_URL}/storestatus`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id: userId, status: newStatus }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      // Atualiza o estado local para o botão refletir a mudança na hora
+      currentUser.storeStatus = newStatus;
+      renderStoreStatus(currentUser);
+      loadProducts();
+
+      Toast.fire({
+        icon: "success",
+        title: `Loja ${newStatus === "ACTIVE" ? "Aberta" : "Fechada"}!`,
+      });
+    } else {
+      const errorMsg =
+        data.message || data.error || "Erro desconhecido no servidor";
+
+      // Alerta sonoro e visual de erro
+      audioAlerta.play().catch(() => {});
+      Toast.fire({
+        icon: "error",
+        title: `Erro: ${errorMsg}`,
+      });
+
+      throw new Error(errorMsg);
+    }
+
+    // Sucesso: Alerta sonoro e visual positivo
+    audioAlerta.play().catch(() => {});
+    Toast.fire({
+      icon: "success",
+      title: `Loja ${newStatus === "ACTIVE" ? "Ativada" : "Desativada"} com sucesso!`,
+    });
+
+    // Recarrega a lista de usuários se a função existir
+    if (typeof loadUsers === "function") loadUsers();
+  } catch (error) {
+    console.error("Erro ao atualizar status do usuário:", error);
+
+    if (!error.message.includes("Erro na requisição")) {
+      audioAlerta.play().catch(() => {});
+      Toast.fire({
+        icon: "warning",
+        title: "Não foi possível conectar ao servidor.",
+      });
+    }
+  }
+}
+
 function addGroup() {
   const container = document.getElementById("modifiers-container"); // ou o ID do seu container de grupos
   const groupId = "group-" + Math.random().toString(36).substr(2, 9);
@@ -414,9 +477,6 @@ document
             const k = inputChave.value.trim();
             const v = inputValor.value.trim();
 
-            // Alert para identificar qual par de atributo está sendo lido
-            alert(`Lendo Atributo #${index + 1}`);
-
             if (k && v) {
               skuObj.attributes[k] = v;
               allAttributeKeys.add(k);
@@ -480,17 +540,32 @@ document
       });
 
       const result = await response.json();
-      if (!response.ok) throw new Error(result.message || "Erro na API");
+      if (!response.ok) {
+        // Se o servidor mandou a lista de erros detalhada
+        if (result.errors) {
+          console.error("Erros de validação:", result.errors);
+          throw new Error("Campos inválidos:\n- " + result.errors.join("\n- "));
+        }
+        throw new Error(result.message || "Erro desconhecido");
+      }
 
       alert("Produto e variações salvos!");
       closeModal();
+      // ... dentro do seu try/catch no frontend
     } catch (err) {
-      // Se a API retornar algo como { message: ["O preço é obrigatório", "O nome é curto"] }
-      const finalMessage = Array.isArray(err.message)
-        ? err.message.join("\n")
-        : err.message;
+      console.error("Erro completo capturado:", err);
 
-      alert("Verifique os dados informados:\n" + finalMessage);
+      // Tenta extrair as mensagens de erro detalhadas que o Joi enviou
+      let detailedErrors = "";
+
+      // Se você salvou o 'result' do fetch em algum lugar ou se a mensagem veio como string
+      if (err.message && err.message.includes("Dados inválidos")) {
+        // Aqui você pode precisar tratar se o erro vier da API como JSON
+        detailedErrors =
+          "Verifique os campos obrigatórios e formatos de preço/SKU.";
+      }
+
+      alert(`Erro: ${err.message}\n${detailedErrors}`);
     }
   });
 
@@ -725,7 +800,7 @@ function renderOrders(orders) {
                         <option value="CREATED" ${order.status === "CREATED" ? "selected" : ""}>Pendente</option>
                         <option value="PREPARING" ${order.status === "PREPARING" ? "selected" : ""}>Preparando</option>
                         <option value="READY" ${order.status === "READY" ? "selected" : ""}>Pronto</option>
-                        <option value="ON_THE_WAY" ${order.status === "ON_THE_WAY" ? "selected" : ""}>Em rota</option>
+                        <option value="OUT_FOR_DELIVERY" ${order.status === "OUT_FOR_DELIVERY" ? "selected" : ""}>Em rota</option>
                         <option value="DELIVERED" ${order.status === "DELIVERED" ? "selected" : ""}>Entregue</option>
                          <option value="CANCELED" ${order.status === "CANCELED" ? "selected" : ""}>Cancelar</option>
                     </select>
@@ -942,13 +1017,22 @@ async function printOrder(id) {
 let myCharts = {}; // Armazena instâncias dos gráficos
 
 function renderDashboard(orders) {
+  // Defina quais status representam uma venda concluída com sucesso
+  const statusConcluidos = ["DELIVERED", "DELIVERED"];
+
+  const completedOrders = orders.filter((o) =>
+    statusConcluidos.includes(o.status),
+  );
   // 1. Cálculos de KPIs
-  const totalSales = orders
-    .filter((o) => o.status !== "CANCELED")
-    .reduce((acc, curr) => acc + (curr.pagamento?.total || 0), 0);
+  const totalSales = completedOrders.reduce(
+    (acc, curr) => acc + (curr.pagamento?.total || 0),
+    0,
+  );
 
   const totalOrders = orders.length;
-  const ticketMedio = totalOrders > 0 ? totalSales / totalOrders : 0;
+  const totalOrdersCompleted = completedOrders.length;
+  const ticketMedio =
+    totalOrdersCompleted > 0 ? totalSales / totalOrdersCompleted : 0;
 
   document.getElementById("kpi-vendas").innerText =
     `R$ ${totalSales.toFixed(2)}`;
@@ -1115,7 +1199,7 @@ setInterval(async () => {
   } catch (err) {
     console.error("❌ Erro no monitor:", err);
   }
-}, 45000);
+}, 5000);
 
 // Lógica de Filtragem do Cardápio
 function filterMenu() {
@@ -2043,3 +2127,37 @@ window.onclick = function (event) {
     closePrinterModal();
   }
 };
+
+function renderStoreStatus(user) {
+  // 1. querySelectorAll retorna uma NodeList (uma lista de elementos)
+  const containers = document.querySelectorAll(".store-status-box");
+
+  // Verificação de segurança
+  if (!containers.length || !user) return;
+
+  const isActive = user.storeStatus === "ACTIVE";
+
+  // Estilos baseados no status
+  const statusClass = isActive
+    ? "bg-green-50 border-green-200 text-green-600 hover:bg-green-100"
+    : "bg-red-50 border-red-200 text-red-600 hover:bg-red-100";
+
+  // 2. Definimos a variável buttonHTML PRIMEIRO
+  const buttonHTML = `
+    <button onclick="toggleUserStatus('${user.id}', '${user.storeStatus}')" 
+            class="w-full flex items-center justify-center md:justify-start gap-2 md:gap-3 px-2 md:px-4 py-2 rounded-xl border transition-all ${statusClass}">
+        <div class="flex flex-col items-center min-w-[30px] md:min-w-[40px]">
+            <i class="fas ${isActive ? "fa-door-open" : "fa-door-closed"} text-base md:text-lg"></i>
+        </div>
+        <div class="flex flex-col items-start leading-tight">
+            <span class="text-[9px] md:text-[10px] font-black uppercase">${isActive ? "ABERTA" : "FECHADA"}</span>
+            <span class="hidden md:block text-[9px] opacity-70">Clique para ${isActive ? "fechar" : "abrir"}</span>
+        </div>
+    </button>
+  `;
+
+  // 3. Agora percorremos a lista e injetamos o HTML em cada container
+  containers.forEach((container) => {
+    container.innerHTML = buttonHTML;
+  });
+}
