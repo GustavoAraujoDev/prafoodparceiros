@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PratinhoPraTudo - Portal do Parceiro</title>
+    <title>PraFood - Portal do Parceiro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -54,7 +54,7 @@
         <div class="z-10 text-white">
           <h1 class="text-4xl font-black mb-4">Bem-vindo, Parceiro!</h1>
           <p class="text-xl opacity-90">
-            Gerencie seu negócio com a plataforma de delivery PratinhoPratudo da América
+            Gerencie seu negócio com a maior plataforma de delivery da América
             Latina.
           </p>
         </div>
@@ -224,6 +224,7 @@
 
         <!-- Rodapé da Sidebar (Usuário e Sair) -->
         <div class="p-4 border-t border-gray-100">
+          <div class="store-status-box hidden md:block"></div>
           <button
             onclick="logout()"
             class="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
@@ -553,29 +554,6 @@
       </main>
     </div>
 
-        <footer class="mt-12 pb-24 md:pb-8 border-t border-gray-200 pt-8">
-  <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-    <div class="flex items-center gap-4">
-      <img src="../logoPraFood.jpeg" alt="PraFood" class="h-6 w-auto rounded opacity-50 grayscale" />
-      <p class="text-xs text-gray-400 font-medium">
-        © 2026 PratinhoPraTudo Portal do Parceiro. Todos os direitos reservados.
-      </p>
-    </div>
-    
-    <div class="flex items-center gap-6">
-      <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-        <span>Desenvolvido por</span>
-        <a href="#" class="text-gray-600 hover:text-[#ea1d2c] transition-colors underline">Gustavo Araújo</a>
-      </div>
-      <div class="h-4 w-[1px] bg-gray-200 hidden md:block"></div>
-      <div class="flex gap-4 text-gray-400 text-sm">
-        <i class="fab fa-apple hover:text-gray-600 cursor-pointer"></i>
-        <i class="fab fa-google-play hover:text-gray-600 cursor-pointer"></i>
-      </div>
-    </div>
-  </div>
-</footer>
-
     <div
       id="printer-modal"
       class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4"
@@ -876,13 +854,16 @@
         <span class="text-[11px] font-medium">Dashboard</span>
       </button>
 
-      <!-- Botão de Mais/Ajustes (Comum em Apps de Gestão) -->
+      <div
+        class="store-status-box flex-1 flex items-center justify-center"
+      ></div>
+
       <button
-        onclick="openSettings()"
+        onclick="logout()"
         class="flex-1 flex flex-col items-center justify-center gap-1 py-2 text-gray-400 transition-all active:scale-90"
       >
-        <i class="fas fa-bars text-xl"></i>
-        <span class="text-[11px] font-medium">Mais</span>
+        <i class="fas fa-sign-out-alt text-xl"></i>
+        <span class="text-[11px] font-medium">Sair</span>
       </button>
     </div>
 
