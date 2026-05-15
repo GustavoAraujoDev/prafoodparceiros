@@ -21,8 +21,18 @@ let currentUser = null; // Variável global para o usuário
 // --- LOGIN ---
 document.getElementById("login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
+
+  // Seleciona o botão de submissão
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  
+  // 1. Evita duplo clique: Desabilita o botão e sinaliza o processamento
+  submitBtn.disabled = true;
+  const originalBtnText = submitBtn.innerText;
+  submitBtn.innerText = "Carregando...";
+
   const email = document.getElementById("login-email").value;
   const password = document.getElementById("login-pass").value;
+
   try {
     const response = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
@@ -30,6 +40,7 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
+    
     const data = await response.json();
 
     if (!response.ok) throw new Error(data.message || "Falha no login");
@@ -45,18 +56,26 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
         title: "Acesso Negado",
         text: "Sua conta não tem permissão de administrador.",
       });
+      
+      // Reabilita se o acesso for negado para permitir nova tentativa com outra conta
+      submitBtn.disabled = false;
+      submitBtn.innerText = originalBtnText;
       return;
     }
 
+    // Se chegou aqui, login OK e é ADMIN. O redirecionamento costuma acontecer aqui.
+
+  } catch (error) {
+    // Tratamento de erro
     Toast.fire({
-      icon: "success",
-      title: "Acesso Liberado ",
-      text: "Sua conta tem permissão de administrador.",
+      icon: "error",
+      title: "Erro",
+      text: error.message,
     });
 
-    showDashboard();
-  } catch (err) {
-    alert("Erro: " + err.message);
+    // 4. IMPORTANTE: Reabilita o botão em caso de erro para o usuário tentar novamente
+    submitBtn.disabled = false;
+    submitBtn.innerText = originalBtnText;
   }
 });
 
