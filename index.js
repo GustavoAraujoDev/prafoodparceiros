@@ -1199,7 +1199,7 @@ setInterval(async () => {
   } catch (err) {
     console.error("❌ Erro no monitor:", err);
   }
-}, 5000);
+}, 45000);
 
 // Lógica de Filtragem do Cardápio
 function filterMenu() {
@@ -1354,7 +1354,7 @@ async function restaurarSessao() {
 
       // 4. Inicia o monitor de pedidos se ele existir
       if (typeof monitorarNovosPedidos === "function") {
-        setInterval(monitorarNovosPedidos, 5000);
+        setInterval(monitorarNovosPedidos, 45000);
       }
     } else if (currentUser) {
       // Se for cliente, mostra a tela de menu do cliente
