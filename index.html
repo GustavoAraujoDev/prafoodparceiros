@@ -387,6 +387,36 @@
                     <span id="table-total">R$ 0,00</span>
                   </div>
                 </div>
+                <div
+                  class="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200"
+                >
+                  <label class="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      id="check-termos"
+                      required
+                      class="mt-1 h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500 transition-all"
+                    />
+                    <span class="text-xs text-gray-600 leading-normal">
+                      Li e concordo com os
+                      <button
+                        type="button"
+                        onclick="openLegalModal('termos')"
+                        class="text-red-600 underline font-semibold hover:text-red-700"
+                      >
+                        Termos de Uso
+                      </button>
+                      e a
+                      <button
+                        type="button"
+                        onclick="openLegalModal('privacidade')"
+                        class="text-red-600 underline font-semibold hover:text-red-700"
+                      >
+                        Política de Privacidade</button
+                      >.
+                    </span>
+                  </label>
+                </div>
                 <button
                   onclick="closeTableAccount()"
                   class="w-full btn-primary mt-6 py-3 rounded-xl font-bold shadow-lg"
@@ -606,6 +636,52 @@
         </div>
       </div>
     </footer>
+
+     <div
+      id="legalModal"
+      class="fixed inset-0 z-[100] hidden items-center justify-center p-4"
+    >
+      <div
+        class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onclick="closeLegalModal()"
+      ></div>
+
+      <div
+        class="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in duration-200"
+      >
+        <div
+          class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50"
+        >
+          <h2
+            id="modalTitle"
+            class="text-lg font-bold text-gray-800 uppercase tracking-tight text-red-600"
+          >
+            Título
+          </h2>
+          <button
+            onclick="closeLegalModal()"
+            class="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-400 text-xl"
+          >
+            &times;
+          </button>
+        </div>
+
+        <div
+          id="modalContent"
+          class="p-6 overflow-y-auto text-sm text-gray-600 leading-relaxed space-y-4"
+        ></div>
+
+        <div class="p-4 border-t border-gray-100 bg-white">
+          <button
+            onclick="closeLegalModal()"
+            class="w-full py-3 bg-gray-900 text-white font-bold rounded-xl hover:bg-gray-800 transition-colors uppercase tracking-widest text-xs"
+          >
+            Entendido
+          </button>
+        </div>
+      </div>
+    </div>
+
 
     <div
       id="printer-modal"
