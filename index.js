@@ -1714,6 +1714,15 @@ async function closeTableAccount() {
     return Swal.fire({ icon: "error", title: "Mesa sem itens!" });
   }
 
+  const concordouTermos = document.getElementById("check-termos").checked;
+
+  // 3. Validação dos Termos
+  if (!concordouTermos)
+    return Toast.fire({
+      icon: "info",
+      title: "Aceite os termos para continuar",
+    });
+
   const result = await Swal.fire({
     title: `Fechar Mesa ${selectedTable}?`,
     text: "Confirma o encerramento da conta e impressão?",
@@ -1740,6 +1749,16 @@ async function closeTableAccount() {
       telefone: "000000000", // Valor padrão para passar na validação se necessário
       email: "atendimento@local.com",
     },
+    // --- BLOCO DE SEGURANÇA JURÍDICA (Snapshot) ---
+    consentimento: {
+      aceitou: true,
+      dataHoraAceite: new Date().toISOString(),
+      userAgent: navigator.userAgent, // Identifica o dispositivo do cliente
+      versaoTermos: "v1.2024-05", // Ajuda a identificar qual era a versão do código
+      conteudoTermos: legalData.termos.content, // Salva o texto exato dos termos
+      conteudoPrivacidade: legalData.privacidade.content, // Salva o texto da privacidade
+    },
+    // ----------------------------------------------
     itens: itemsMesa.map((item) => ({
       productId: item.productId,
       name: item.name,
@@ -2161,3 +2180,54 @@ function renderStoreStatus(user) {
     container.innerHTML = buttonHTML;
   });
 }
+
+function openLegalModal(type) {
+  const modal = document.getElementById("legalModal");
+  const title = document.getElementById("modalTitle");
+  const content = document.getElementById("modalContent");
+
+  title.innerText = legalData[type].title;
+  content.innerHTML = legalData[type].content;
+
+  modal.classList.remove("hidden");
+  modal.classList.add("flex");
+  document.body.style.overflow = "hidden"; // Trava o scroll da página
+}
+
+function closeLegalModal() {
+  const modal = document.getElementById("legalModal");
+  modal.classList.add("hidden");
+  modal.classList.remove("flex");
+  document.body.style.overflow = "auto"; // Destrava o scroll
+}
+
+// Conteúdos Detalhados
+const legalData = {
+  termos: {
+    title: "Termos de Uso",
+    content: `
+        <h4 class="font-bold text-gray-800">1. Objeto</h4>
+        <p>O PraFood atua como plataforma de intermediação de pedidos entre o cliente e o estabelecimento comercial.</p>
+        <h4 class="font-bold text-gray-800">2. Responsabilidades</h4>
+        <p>O estabelecimento é o único responsável pelo preparo, qualidade e entrega dos produtos. O usuário é responsável por fornecer dados corretos de entrega.</p>
+        <h4 class="font-bold text-gray-800">3. Cancelamento</h4>
+        <p>O cancelamento só poderá ser solicitado antes do início do preparo pelo restaurante. Itens personalizados seguem regras específicas do CDC.</p>
+        <h4 class="font-bold text-gray-800">4. Pagamentos</h4>
+        <p>Valores e taxas são definidos pelo restaurante. Erros no processamento devem ser relatados ao suporte imediatamente.</p>
+      `,
+  },
+  privacidade: {
+    title: "Política de Privacidade",
+    content: `
+        <h4 class="font-bold text-gray-800 uppercase text-xs text-red-500">Conformidade LGPD</h4>
+        <p><strong>Dados Coletados:</strong> Nome, Telefone e Endereço.</p>
+        <h4 class="font-bold text-gray-800">1. Uso dos Dados</h4>
+        <p>Seus dados são usados exclusivamente para: Processar o pedido, realizar a entrega e garantir a segurança do pagamento.</p>
+        <h4 class="font-bold text-gray-800">2. Compartilhamento</h4>
+        <p>Compartilhamos seus dados apenas com o restaurante (preparo) e o entregador (logística). Não vendemos seus dados a terceiros.</p>
+        <h4 class="font-bold text-gray-800">3. Seus Direitos</h4>
+        <p>Você pode solicitar a exclusão total dos seus dados da nossa base a qualquer momento enviando um e-mail para o suporte.</p>
+      `,
+  },
+};
+
