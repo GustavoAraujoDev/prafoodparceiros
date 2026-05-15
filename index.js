@@ -63,6 +63,11 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
       return;
     }
 
+    // --- AQUI ESTAVA O PROBLEMA ---
+    // Se chegou aqui, login OK e é ADMIN. 
+    // Você precisa avisar ao navegador para mostrar o dashboard!
+    showDashboard();
+
     // Se chegou aqui, login OK e é ADMIN. O redirecionamento costuma acontecer aqui.
 
   } catch (error) {
