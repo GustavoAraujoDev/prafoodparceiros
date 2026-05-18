@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PratinhoPraTudo - Portal do Parceiro</title>
+    <title>PratinhoPratudo - Portal do Parceiro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="shortcut icon" href="../logoPraFood.jpeg" type="image/x-icon" />
+    <link rel="shortcut icon" href="./logopratinho.jpeg" type="image/x-icon" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
@@ -54,7 +54,7 @@
         <div class="z-10 text-white">
           <h1 class="text-4xl font-black mb-4">Bem-vindo, Parceiro!</h1>
           <p class="text-xl opacity-90">
-            Gerencie seu negócio com a maior plataforma de delivery PratinhoPraTudo da América
+            Gerencie seu negócio com a maior plataforma de delivery da América
             Latina.
           </p>
         </div>
@@ -73,8 +73,8 @@
           <!-- Logo e Título -->
           <div class="text-left mb-10">
             <img
-              src="../logoPraFood.jpeg"
-              alt="iFood Parceiros"
+              src="./logopratinho.jpeg"
+              alt="PratinhoPraTudo Parceiros"
               class="w-32 mb-6"
             />
             <h2 class="text-3xl font-bold text-gray-800 tracking-tight">
@@ -148,8 +148,8 @@
         <!-- Header da Sidebar com Logo -->
         <div class="p-6 mb-2">
           <img
-            src="../logoPraFood.jpeg"
-            alt="PraFood"
+            src="./logopratinho.jpeg"
+            alt="PratinhoPraTudo"
             class="w-32 transition-transform hover:scale-105"
           />
         </div>
@@ -176,10 +176,10 @@
           >
             <span class="text-xl opacity-70">📋</span>
             <span>Pedidos</span>
-            <!-- Badge de novos pedidos (opcional) -->
             <span
-              class="ml-auto bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold"
-              >5</span
+              id="badge-orders-count"
+              class="ml-auto bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-bold hidden"
+              >0</span
             >
           </a>
 
@@ -191,6 +191,15 @@
           >
             <span class="text-xl opacity-70">🍔</span>
             <span>Cardápio</span>
+          </a>
+
+          <a
+            href="./combo.html"
+            id="nav-combos"
+            class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-all"
+          >
+            <span class="text-xl opacity-70">📦</span>
+            <span>Combos e Ofertas</span>
           </a>
 
           <a
@@ -280,10 +289,7 @@
                 onchange="filterMenu()"
                 class="border rounded-lg p-2 bg-gray-50 outline-none focus:ring-2 focus:ring-red-500"
               >
-                <option value="all">Todas</option>
-                <option value="pizzas">Pizzas</option>
-                <option value="bebidas">Bebidas</option>
-                <option value="sobremesas">Sobremesas</option>
+                <option value="all">Todas as Categorias</option>
               </select>
             </div>
             <div>
@@ -387,6 +393,7 @@
                     <span id="table-total">R$ 0,00</span>
                   </div>
                 </div>
+
                 <div
                   class="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200"
                 >
@@ -485,7 +492,7 @@
               >
                 <option value="all">Todos</option>
                 <option value="DELIVERY">Entrega</option>
-                <option value="TAKEOUT">Retirada</option>
+                <option value="PICKUP">Retirada</option>
               </select>
             </div>
           </div>
@@ -591,26 +598,41 @@
         <div class="flex flex-col items-center text-center">
           <div class="grayscale opacity-50 mb-6">
             <img
-              src="../logoPraFood.jpeg"
-              alt="PraFood"
+              src="./logopratinho.jpeg"
+              alt="Pratinhopratudo"
               class="h-8 w-auto rounded-lg"
             />
           </div>
 
-          <div
+          <nav
             class="flex gap-6 mb-8 text-xs font-semibold text-gray-400 uppercase tracking-widest"
           >
-            <a href="#" class="hover:text-red-600 transition-colors">Termos</a>
-            <a href="#" class="hover:text-red-600 transition-colors"
-              >Privacidade</a
+            <button
+              onclick="openLegalModal('termos')"
+              class="hover:text-red-600 transition-colors uppercase"
             >
-            <a href="#" class="hover:text-red-600 transition-colors">Ajuda</a>
-          </div>
+              Termos
+            </button>
+            <button
+              onclick="openLegalModal('privacidade')"
+              class="hover:text-red-600 transition-colors uppercase"
+            >
+              Privacidade
+            </button>
+            <a href="#" class="hover:text-red-600 transition-colors uppercase"
+              >Ajuda</a
+            >
+          </nav>
 
           <div class="space-y-2">
             <p class="text-sm text-gray-500">
-              © 2026 <span class="font-bold text-gray-800">PratinhoPraTudo</span>. Todos
-              os direitos reservados.
+              © 2026
+              <span class="font-bold text-gray-800">PratinhoPraTudo</span>.
+              Todos os direitos reservados.
+            </p>
+            <p class="text-[10px]">
+              CNPJ: 57.678.701/0001-00 | Rua Joaquim José da Silva, 1006, Vila
+              Velha
             </p>
             <div
               class="flex items-center justify-center gap-2 text-xs text-gray-400"
@@ -637,7 +659,7 @@
       </div>
     </footer>
 
-     <div
+    <div
       id="legalModal"
       class="fixed inset-0 z-[100] hidden items-center justify-center p-4"
     >
@@ -682,76 +704,137 @@
       </div>
     </div>
 
-
     <div
       id="printer-modal"
       class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4"
     >
       <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
         <div class="flex justify-between items-center mb-6">
-          <h2 class="text-xl font-bold text-gray-800">Status da Impressora</h2>
+          <div>
+            <h2 class="text-xl font-bold text-gray-800">
+              Gerenciar Impressora
+            </h2>
+            <p class="text-xs text-gray-500">
+              Configure o dispositivo térmico do caixa
+            </p>
+          </div>
           <button
             onclick="closePrinterModal()"
-            class="text-gray-400 hover:text-gray-600"
+            class="text-gray-400 hover:text-gray-600 transition"
           >
             <i class="fas fa-times text-xl"></i>
           </button>
         </div>
 
         <div class="space-y-4">
+          <button
+            onclick="scanNetworkPrinters()"
+            class="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-dashed border-blue-300 rounded-xl text-sm text-blue-600 bg-blue-50/30 hover:bg-blue-50 transition font-semibold"
+          >
+            <i id="scan-icon" class="fas fa-sync-alt"></i> Buscar Impressoras no
+            Wi-Fi
+          </button>
+
           <div
-            class="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
+            id="printer-list"
+            class="space-y-2 max-h-40 overflow-y-auto pr-1"
+          >
+            <p class="text-center text-xs text-gray-400 py-2">
+              Clique acima para escanear a rede local.
+            </p>
+          </div>
+
+          <hr class="border-gray-100" />
+
+          <div
+            id="status-container"
+            class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100"
           >
             <div class="flex items-center gap-3">
-              <div class="p-3 bg-green-100 text-green-600 rounded-lg">
-                <i class="fas fa-link"></i>
+              <div
+                id="status-badge"
+                class="p-3 bg-gray-100 text-gray-400 rounded-lg transition-colors duration-300"
+              >
+                <i class="fas fa-print"></i>
               </div>
               <div>
-                <p class="text-sm text-gray-500">Status</p>
-                <p class="font-bold text-green-600">Conectada / Online</p>
+                <p class="text-xs text-gray-500">Status do Caixa</p>
+                <p
+                  id="printer-status-text"
+                  class="font-bold text-gray-400 text-sm"
+                >
+                  Desconectada
+                </p>
               </div>
             </div>
             <button
+              id="btn-test-print"
               onclick="testPrint()"
-              class="text-xs bg-white border px-3 py-1 rounded shadow-sm hover:bg-gray-50"
+              disabled
+              class="text-xs bg-white border px-3 py-1.5 rounded-lg shadow-sm font-medium opacity-50 cursor-not-allowed hover:bg-gray-50 transition"
             >
               Testar
             </button>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div class="p-3 border rounded-xl">
-              <p class="text-xs text-gray-500">Modelo</p>
-              <p class="font-semibold">Epson TM-T20X</p>
+          <div class="mt-4 pt-3 border-t border-gray-100">
+            <p class="text-[10px] font-semibold text-gray-400 uppercase mb-2">
+              Não encontrou? Digite o IP manualmente
+            </p>
+            <div class="flex gap-2">
+              <input
+                type="text"
+                id="manual-printer-ip"
+                placeholder="Ex: 192.168.1.150"
+                class="flex-1 text-xs border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-500"
+              />
+              <button
+                onclick="connectManualPrinter()"
+                class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition"
+              >
+                Conectar
+              </button>
             </div>
-            <div class="p-3 border rounded-xl">
-              <p class="text-xs text-gray-500">Interface</p>
-              <p class="font-semibold">USB (COM3)</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="p-3 border rounded-xl bg-white">
+              <p class="text-xs text-gray-500">Dispositivo</p>
+              <p
+                id="active-printer-name"
+                class="font-semibold text-sm truncate text-gray-400"
+              >
+                Nenhum
+              </p>
+            </div>
+            <div class="p-3 border rounded-xl bg-white">
+              <p class="text-xs text-gray-500">Endereço IP</p>
+              <p
+                id="active-printer-ip"
+                class="font-semibold text-sm text-gray-400"
+              >
+                0.0.0.0
+              </p>
             </div>
           </div>
 
           <div class="p-3 border rounded-xl bg-yellow-50 border-yellow-100">
             <div class="flex gap-2">
-              <i class="fas fa-info-circle text-yellow-600 mt-1"></i>
-              <p class="text-sm text-yellow-700">
-                Papel está com menos de 20%. Recomendável trocar em breve.
+              <i class="fas fa-info-circle text-yellow-600 mt-0.5 text-sm"></i>
+              <p class="text-xs text-yellow-700 leading-relaxed">
+                Certifique-se de que a impressora está ligada e conectada na
+                mesma rede Wi-Fi deste terminal.
               </p>
             </div>
           </div>
         </div>
 
-        <div class="mt-8 flex gap-3">
+        <div class="mt-6 flex gap-3">
           <button
             onclick="closePrinterModal()"
-            class="flex-1 py-2 bg-gray-100 text-gray-600 rounded-lg font-bold"
+            class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl font-bold text-sm transition"
           >
             Fechar
-          </button>
-          <button
-            onclick="reconnectPrinter()"
-            class="flex-1 py-2 btn-primary rounded-lg font-bold"
-          >
-            Reiniciar
           </button>
         </div>
       </div>
@@ -795,7 +878,7 @@
       >
         <input type="hidden" id="prod-id" value="" />
         <h2 id="modal-title" class="text-2xl font-bold mb-6">
-          Cadastrar no Cardápio (PraFood)
+          Cadastrar no Cardápio PratinhoPraTudo
         </h2>
 
         <form id="product-form" class="space-y-4">
@@ -929,7 +1012,7 @@
               type="submit"
               class="bg-red-600 text-white px-6 py-2 rounded font-bold"
             >
-              Salvar no iFood
+              Salvar no PratinhoPraTudo
             </button>
           </div>
         </form>
@@ -982,6 +1065,14 @@
         <i class="fas fa-chart-line text-xl"></i>
         <span class="text-[11px] font-medium">Dashboard</span>
       </button>
+
+      <a
+        href="combo.html"
+        class="flex-1 flex flex-col items-center justify-center gap-1 py-2 text-gray-400 transition-all active:scale-90"
+      >
+        <i class="fas fa-box-open text-xl"></i>
+        <span class="text-[11px] font-medium">Combos</span>
+      </a>
 
       <div
         class="store-status-box flex-1 flex items-center justify-center"
