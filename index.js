@@ -1,10 +1,18 @@
+/**
+ * ============================================================================
+ * 🎯 PAINEL ADMINISTRATIVO - CONFIGURAÇÕES GLOBAIS E ESTADOS
+ * ============================================================================
+ */
+
+// 🌐 Endpoints e Recursos Estáticos
 const API_URL = "https://prafoodapi.onrender.com/products";
-// Configuração do som de alerta
+
+// 🎵 Sistema de Notificação Sonora
 const audioAlerta = new Audio(
-  "https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3",
+  "https://assets.mixkit.co/active_storage/sfx/991/991-preview.mp3",
 );
 
-// Configuração padrão do Toast do SweetAlert2
+// 🔮 Instância Base de Alertas Flutuantes (SweetAlert2)
 const Toast = Swal.mixin({
   toast: true,
   position: "top-end",
@@ -16,39 +24,43 @@ const Toast = Swal.mixin({
     toast.addEventListener("mouseleave", Swal.resumeTimer);
   },
 });
-let currentUser = null; // Variável global para o usuário
 
-// --- LOGIN ---
+// 🧠 Estados Globais da Aplicação (Memória Cache)
+let currentUser = null; // Armazena a sessão e privilégios do usuário logado
+let allProductsGlobal = null; // Cache global de produtos para filtros e manipulações rápidas
+
+/**
+ * ============================================================================
+ * 🔐 MÓDULO DE AUTENTICAÇÃO E CONTROLE DE ACESSO (AUTH)
+ * ============================================================================
+ */
+
+/**
+ * Ouvinte do Formulário de Login
+ * Gerencia a submissão, verificação de credenciais e validação de regras de nível administrativo (Role ADMIN).
+ */
 document.getElementById("login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-
-  // Seleciona o botão de submissão
-  const submitBtn = e.target.querySelector('button[type="submit"]');
-  
-  // 1. Evita duplo clique: Desabilita o botão e sinaliza o processamento
-  submitBtn.disabled = true;
-  const originalBtnText = submitBtn.innerText;
-  submitBtn.innerText = "Carregando...";
 
   const email = document.getElementById("login-email").value;
   const password = document.getElementById("login-pass").value;
 
   try {
+    // 📡 1. Autenticação inicial baseada em sessão por Cookies (HttpOnly)
     const response = await fetch(`${API_URL}/auth/login`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
-    
     const data = await response.json();
 
     if (!response.ok) throw new Error(data.message || "Falha no login");
 
-    // 2. Busca os dados do usuário para verificar o Role
+    // 🔎 2. Busca os dados detalhados do usuário para validação de privilégios
     await fetchUserData();
 
-    // 3. Valida se é ADMIN
+    // 🛡️ 3. Validação de segurança de escopo: Bloqueia perfis que não sejam administradores
     if (!currentUser || currentUser.role !== "ADMIN") {
       audioAlerta.play();
       Toast.fire({
@@ -56,34 +68,26 @@ document.getElementById("login-form").addEventListener("submit", async (e) => {
         title: "Acesso Negado",
         text: "Sua conta não tem permissão de administrador.",
       });
-      
-      // Reabilita se o acesso for negado para permitir nova tentativa com outra conta
-      submitBtn.disabled = false;
-      submitBtn.innerText = originalBtnText;
       return;
     }
 
-    // --- AQUI ESTAVA O PROBLEMA ---
-    // Se chegou aqui, login OK e é ADMIN. 
-    // Você precisa avisar ao navegador para mostrar o dashboard!
-    showDashboard();
-
-    // Se chegou aqui, login OK e é ADMIN. O redirecionamento costuma acontecer aqui.
-
-  } catch (error) {
-    // Tratamento de erro
+    // 🎉 4. Autorização concedida com sucesso
     Toast.fire({
-      icon: "error",
-      title: "Erro",
-      text: error.message,
+      icon: "success",
+      title: "Acesso Liberado ",
+      text: "Sua conta tem permissão de administrador.",
     });
 
-    // 4. IMPORTANTE: Reabilita o botão em caso de erro para o usuário tentar novamente
-    submitBtn.disabled = false;
-    submitBtn.innerText = originalBtnText;
+    showDashboard();
+  } catch (err) {
+    alert("Erro: " + err.message);
   }
 });
 
+/**
+ * Recupera o perfil do usuário logado na sessão ativa.
+ * Injeta o status da loja e atualiza o estado global `currentUser`.
+ */
 async function fetchUserData() {
   try {
     const response = await fetch(`${API_URL}/users/me`, {
@@ -102,52 +106,119 @@ async function fetchUserData() {
   }
 }
 
+/**
+ * Encerra a sessão ativa do usuário tanto no servidor quanto no cliente.
+ * Destrói cookies de autenticação e limpa o estado de memória.
+ */
+async function logout() {
+  try {
+    // 📡 1. Sinaliza o Backend para invalidar e destruir o Token/Cookie de Sessão
+    await fetch(`${API_URL}/logout`, {
+      method: "POST",
+      credentials: "include", // ESSENCIAL para o navegador enviar/receber cookies e limpar o cabeçalho Set-Cookie
+    });
+  } catch (err) {
+    console.error("Erro ao falar com o servidor no logout:", err);
+  } finally {
+    // 🧹 2. Limpa o cache de memória local
+    currentUser = null;
+
+    // 🔄 3. Força o reset de rotas e recarrega a aplicação limpando possíveis rastros de memória
+    window.location.hash = "auth";
+    window.location.reload();
+  }
+}
+
+/**
+ * ============================================================================
+ * 🖥️ MÓDULO DE INTERFACE VISUAL (DOM & FLUXO DE TELAS)
+ * ============================================================================
+ */
+
+/**
+ * Altera o estado visual das telas do ecossistema.
+ * Oculta a interface de autenticação e inicializa o carregamento dos módulos do Dashboard.
+ */
 function showDashboard() {
   document.getElementById("login-screen").classList.add("hidden");
   document.getElementById("main-app").classList.remove("hidden");
   loadProducts();
 }
 
-async function logout() {
-  try {
-    // 1. Chama o Backend para destruir o Cookie
-    await fetch(`${API_URL}/logout`, {
-      method: "POST",
-      credentials: "include", // ESSENCIAL para o navegador enviar/receber cookies
-    });
-  } catch (err) {
-    console.error("Erro ao falar com o servidor no logout:", err);
-  } finally {
-    // 3. Reseta o estado local
-    currentUser = null;
+/**
+ * ============================================================================
+ * 📦 MÓDULO DE PRODUTOS (CATÁLOGO & INTEGRAÇÃO DE DADOS)
+ * ============================================================================
+ */
 
-    // 4. Força o redirecionamento para o login e recarrega
-    window.location.hash = "auth";
-    window.location.reload();
-  }
-}
-
-// --- PRODUTOS ---
+/**
+ * Requisita a listagem completa de produtos cadastrados na base de dados.
+ * Normaliza retornos em diferentes estruturas, alimenta o cache global e dispara seletores visuais.
+ */
 async function loadProducts() {
   try {
     const res = await fetch(API_URL, {
       method: "GET",
-
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
     });
     const data = await res.json();
+
+    // 📊 Normalização de payload da API (Suporta Arrays diretos ou encapsulados em objetos .data)
     const products = Array.isArray(data) ? data : data.data || [];
-    // 🔥 AQUI ESTÁ O SEGREDO: Salve os produtos na global
+
+    // 🔥 CACHE DE SEGURANÇA: Registra os dados no escopo global para manipulação de filtros e sub-rotinas
     allProductsGlobal = products;
+
+    // 🗺️ Dispara a atualização dos componentes visuais dependentes
+    populateCategoryFilter(products);
     renderTable(products);
   } catch (err) {
     console.error("Erro ao listar:", err);
   }
 }
 
+/**
+ * ============================================================================
+ * 🎛️ COMPONENTES VISUAIS (SELECTORS & RENDERS)
+ * ============================================================================
+ */
+
+/**
+ * Preenche dinamicamente o menu de seleção (<select>) de categorias.
+ * Agrupa os IDs de categorias presentes no catálogo atual, remove duplicidades
+ * e formata a exibição com a primeira letra em maiúscula.
+ * * @param {Array} products - Lista de produtos carregada do backend
+ */
+function populateCategoryFilter(products) {
+  const select = document.getElementById("filter-menu-cat");
+
+  // 1. Mapeia todas as categorias dos produtos
+  // Se o seu produto tiver um objeto de categoria ex: p.category.name, mude para p.category.name
+  const categories = products.map((p) => p.categoryId).filter(Boolean);
+
+  // 2. Remove duplicadas usando o Set
+  const uniqueCategories = [...new Set(categories)];
+
+  // 3. Mantém a opção "Todas" e renderiza as categorias dinâmicas
+  select.innerHTML = `<option value="all">Todas as Categorias</option>`;
+
+  uniqueCategories.forEach((cat) => {
+    // Tratamos para exibição visual (Primeira letra Maiúscula) se necessário
+    const formattedName = cat.charAt(0).toUpperCase() + cat.slice(1);
+
+    select.innerHTML += `<option value="${cat}">${formattedName}</option>`;
+  });
+}
+
+/**
+ * Renderiza as linhas da tabela de gerenciamento de produtos (DataGrid).
+ * Injeta dinamicamente estados visuais de subitens (Modificadores), badges de
+ * categorias, controles rápidos de adição/subtração de estoque por SKU e chaves de ativação.
+ * * @param {Array} products - Coleção filtrada ou completa de produtos cadastrados
+ */
 function renderTable(products) {
   const container = document.getElementById("product-list");
   if (products.length === 0) {
@@ -256,6 +327,19 @@ function renderTable(products) {
     .join("");
 }
 
+/**
+ * ============================================================================
+ * 🔄 MÓDULO DE INTERAÇÕES E REQUISIÇÕES (MUTATIONS)
+ * ============================================================================
+ */
+
+/**
+ * Altera de forma alternada o status de ativação comercial de um produto específico.
+ * Dispara feedbacks visuais imediatos baseados na resposta da API e previne travamentos
+ * de fluxo capturando rejeições de reprodução de áudio impostas por browsers.
+ * * @param {string} productId - ID corporativo/comercial do produto
+ * @param {string} currentStatus - Estado de ativação atual ("ACTIVE" ou "INACTIVE")
+ */
 async function toggleStatus(productId, currentStatus) {
   const newStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
 
@@ -307,6 +391,20 @@ async function toggleStatus(productId, currentStatus) {
     }
   }
 }
+
+/**
+ * ============================================================================
+ * 🔄 MÓDULO DE INTERAÇÕES E REQUISIÇÕES (MUTATIONS)
+ * ============================================================================
+ */
+
+/**
+ * Altera de forma alternada o status comercial da loja (Aberta / Fechada).
+ * Sincroniza o estado de sessão local do usuário, dispara rotinas secundárias de
+ * recarga e emite feedbacks visuais e auditivos baseados na resposta do servidor.
+ * @param {string} userId - ID único do usuário administrador logado
+ * @param {string} currentStatus - Estado atual de disponibilidade da loja ("ACTIVE" ou "INACTIVE")
+ */
 
 async function toggleUserStatus(userId, currentStatus) {
   // Conforme o seu Schema, usamos 'ACTIVE' (maiúsculo) e 'inactive' (minúsculo)
@@ -370,6 +468,17 @@ async function toggleUserStatus(userId, currentStatus) {
   }
 }
 
+/**
+ * ============================================================================
+ * 🛠️ CONSTRUTORES DINÂMICOS DO CARDÁPIO (DOM INJECTION)
+ * ============================================================================
+ */
+
+/**
+ * Cria e injeta um novo grupo de modificadores (Adicionais/Opcionais) na interface.
+ * Gera uma chave aleatória temporária baseada em string alfanumérica de base 36
+ * para ancoragem e controle dos subitens associados.
+ */
 function addGroup() {
   const container = document.getElementById("modifiers-container"); // ou o ID do seu container de grupos
   const groupId = "group-" + Math.random().toString(36).substr(2, 9);
@@ -401,6 +510,11 @@ function addGroup() {
   container.appendChild(div);
 }
 
+/**
+ * Vincula e renderiza uma nova linha de opção/ingrediente específico dentro de um grupo delimitado.
+ * Define validadores nativos de obrigatoriedade e seletores de status visual.
+ * @param {string} groupId - ID único identificador do grupo pai de ancoragem
+ */
 function addItemToGroup(groupId) {
   const groupDiv = document.querySelector(`[data-id="${groupId}"] .items-list`);
   const div = document.createElement("div");
@@ -427,7 +541,10 @@ function addItemToGroup(groupId) {
 
 addGroup();
 
-// Funções para Gerenciar a Interface
+/**
+ * Cria e anexa uma nova estrutura de formulário para gerenciamento de SKUs (Variações).
+ * Constrói de forma acoplada uma sub-grade interna voltada ao cadastro de mapeamento de Atributos Chave/Valor.
+ */
 function addSkuRow() {
   const container = document.getElementById("skus-container");
   const div = document.createElement("div");
@@ -471,29 +588,38 @@ function addAttrField(btn) {
 // Inicializa com uma linha de cada
 addSkuRow();
 
-// SUBMISSÃO DO FORMULÁRIO
+/**
+ * ============================================================================
+ * 📦 MÓDULO DE PRODUTOS - FORMULÁRIO E PERSISTÊNCIA
+ * ============================================================================
+ */
+
+/**
+ * Ouvinte do Evento de Submissão do Formulário de Produtos.
+ * Extrai recursivamente a árvore do DOM para construir o payload estruturado (SKUs e Modificadores),
+ * gerencia o estado do botão para mitigar cliques concorrentes (duplo clique) e persiste via REST API.
+ */
 document
   .getElementById("product-form")
   .addEventListener("submit", async (e) => {
     e.preventDefault();
 
+    const submitButton = e.target.querySelector('button[type="submit"]');
     const productId = document.getElementById("prod-id").value;
-    alert(productId);
     const isEdit = productId !== "";
-
     const allAttributeKeys = new Set();
 
-    // Coletar SKUs (Variantes)
+    // 1. Coletar SKUs (Variantes)
     const skus = Array.from(document.querySelectorAll(".sku-row")).map(
       (row) => {
         const skuObj = {
           name: row.querySelector(".sku-name").value,
-          price: parseFloat(row.querySelector(".sku-price").value),
+          price: parseFloat(row.querySelector(".sku-price").value) || 0,
           stock: parseInt(row.querySelector(".sku-stock").value) || 0,
           attributes: {},
         };
 
-        row.querySelectorAll(".attr-pair").forEach((pair, index) => {
+        row.querySelectorAll(".attr-pair").forEach((pair) => {
           const inputChave = pair.querySelector(".attr-key");
           const inputValor = pair.querySelector(".attr-val");
 
@@ -511,104 +637,120 @@ document
       },
     );
 
-    // 2. Coletar Modifiers (Adicionais)
+    // 2. Coletar Modifiers (Adicionais) com ID Comercial garantido
     const modifierGroups = Array.from(
       document.querySelectorAll(".group-box"),
     ).map((group) => {
+      const minVal = parseInt(group.querySelector(".group-min").value) || 0;
       return {
         name: group.querySelector(".group-name").value,
-        required: parseInt(group.querySelector(".group-min").value) > 0,
-        min: parseInt(group.querySelector(".group-min").value),
-        max: parseInt(group.querySelector(".group-max").value),
-        items: Array.from(group.querySelectorAll(".item-row")).map((item) => ({
-          name: item.querySelector(".item-name").value,
-          price: parseFloat(item.querySelector(".item-price").value) || 0,
-          status: item.querySelector(".item-status").value, // Pega o Ativo/Inativo
-        })),
+        required: minVal > 0,
+        min: minVal,
+        max: parseInt(group.querySelector(".group-max").value) || 1,
+        items: Array.from(group.querySelectorAll(".item-row")).map((item) => {
+          return {
+            name: item.querySelector(".item-name").value,
+            price: parseFloat(item.querySelector(".item-price").value) || 0,
+            status: item.querySelector(".item-status").value,
+          };
+        }),
       };
     });
 
     // 3. Montar Objeto Final
     const productData = {
-      name: document.getElementById("prod-name").value,
-      description: document.getElementById("prod-description").value,
-      basePrice: parseFloat(document.getElementById("prod-base-price").value),
+      name: document.getElementById("prod-name").value.trim(),
+      description: document.getElementById("prod-description").value.trim(),
+      basePrice:
+        parseFloat(document.getElementById("prod-base-price").value) || 0,
       images: [
-        document.getElementById("prod-image").value ||
+        document.getElementById("prod-image").value.trim() ||
           "https://site.com/placeholder.png",
       ],
       categoryId: document.getElementById("prod-cat-id").value,
-      attribute_keys: Array.from(allAttributeKeys), // Importante
+      attribute_keys: Array.from(allAttributeKeys),
       status: "ACTIVE",
       skus: skus,
-      modifiers: modifierGroups, // CORRETO: Cada grupo já tem seu nome (Proteína, etc),
+      modifiers: modifierGroups,
       availability: {
         days: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
-        start: document.getElementById("avail-start").value,
-        end: document.getElementById("avail-end").value,
+        start: document.getElementById("avail-start").value || "00:00",
+        end: document.getElementById("avail-end").value || "23:59",
       },
     };
 
-    // 4. Enviar para API
+    // 4. Enviar para API com bloqueio de concorrência (UX Sênior)
     try {
+      if (submitButton) submitButton.disabled = true; // Evita duplo clique
+
       const url = isEdit ? `${API_URL}/${productId}` : API_URL;
       const method = isEdit ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method: method,
         credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(productData),
       });
 
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        // Se o servidor mandou a lista de erros detalhada
         if (result.errors) {
-          console.error("Erros de validação:", result.errors);
           throw new Error("Campos inválidos:\n- " + result.errors.join("\n- "));
         }
-        throw new Error(result.message || "Erro desconhecido");
+        throw new Error(
+          result.error || result.message || "Erro desconhecido na API",
+        );
       }
 
-      alert("Produto e variações salvos!");
+      Toast.fire({
+        icon: "success",
+        title: "Produto e variações salvos com sucesso!",
+      });
+
       closeModal();
-      // ... dentro do seu try/catch no frontend
+      if (typeof loadProducts === "function") loadProducts(); // Atualiza a lista dinamicamente se a função existir
     } catch (err) {
       console.error("Erro completo capturado:", err);
 
-      // Tenta extrair as mensagens de erro detalhadas que o Joi enviou
-      let detailedErrors = "";
-
-      // Se você salvou o 'result' do fetch em algum lugar ou se a mensagem veio como string
-      if (err.message && err.message.includes("Dados inválidos")) {
-        // Aqui você pode precisar tratar se o erro vier da API como JSON
-        detailedErrors =
-          "Verifique os campos obrigatórios e formatos de preço/SKU.";
-      }
-
-      alert(`Erro: ${err.message}\n${detailedErrors}`);
+      Swal.fire({
+        icon: "error",
+        title: "Ops! Ocorreu um erro",
+        text: err.message,
+        confirmButtonColor: "#dc2626",
+        confirmButtonText: "Entendido",
+      });
+    } finally {
+      if (submitButton) submitButton.disabled = false; // Libera o botão
     }
   });
 
+/**
+ * ============================================================================
+ * 🖥️ MÓDULO DE INTERFACE VISUAL - HIDRATAÇÃO DO FORMULÁRIO (EDIT)
+ * ============================================================================
+ */
+
+/**
+ * Requisita os dados detalhados de um produto e injeta as referências na interface (DOM).
+ * Limpa instâncias anteriores do formulário e reconstroi programaticamente as grades dinâmicas de SKUs e Grupos.
+ * @param {string} id - ID único do produto alvo de modificação
+ */
 async function editProduct(id) {
   try {
-    // 1. Buscar dados atuais do produto
     const response = await fetch(`${API_URL}/${id}`, {
       credentials: "include",
     });
+    if (!response.ok)
+      throw new Error("Não foi possível recuperar os dados do produto.");
+
     const p = await response.json();
 
-    if (!response.ok) throw new Error("Erro ao buscar produto");
-
-    // 2. Abrir modal e Resetar
     openModal();
     const form = document.getElementById("product-form");
     form.reset();
 
-    // 3. Preencher campos básicos
     document.getElementById("prod-id").value = p.id || p._id;
     document.getElementById("modal-title").innerText = "Editar Produto";
     document.getElementById("prod-name").value = p.name;
@@ -620,60 +762,99 @@ async function editProduct(id) {
       p.availability?.start || "00:00";
     document.getElementById("avail-end").value = p.availability?.end || "23:59";
 
-    // 4. Limpar e Preencher SKUs
     const skuContainer = document.getElementById("skus-container");
-    skuContainer.innerHTML = ""; // Limpa os campos padrão
-    p.skus.forEach((sku) => {
-      addSkuRow(); // Cria a linha
-      const lastRow = skuContainer.lastElementChild;
-      lastRow.querySelector(".sku-name").value = sku.name;
-      lastRow.querySelector(".sku-price").value = sku.price;
-      lastRow.querySelector(".sku-stock").value = sku.stock;
+    skuContainer.innerHTML = "";
 
-      // Preencher atributos do SKU
-      const attrList = lastRow.querySelector(".attributes-list");
-      attrList.innerHTML = ""; // Limpa o par padrão
-      Object.entries(sku.attributes || {}).forEach(([key, val]) => {
-        const div = document.createElement("div");
-        div.className = "flex gap-2 attr-pair";
-        div.innerHTML = `
-                    <input type="text" value="${key}" class="attr-key w-1/2 p-1 border rounded text-xs">
-                    <input type="text" value="${val}" class="attr-val w-1/2 p-1 border rounded text-xs">
-                `;
-        attrList.appendChild(div);
-      });
+    p.skus.forEach((sku) => {
+      if (typeof addSkuRow === "function") {
+        addSkuRow();
+        const lastRow = skuContainer.lastElementChild;
+        lastRow.querySelector(".sku-name").value = sku.name;
+        lastRow.querySelector(".sku-price").value = sku.price;
+        lastRow.querySelector(".sku-stock").value = sku.stock;
+
+        const attrList = lastRow.querySelector(".attributes-list");
+        attrList.innerHTML = "";
+        Object.entries(sku.attributes || {}).forEach(([key, val]) => {
+          const div = document.createElement("div");
+          div.className = "flex gap-2 attr-pair";
+          div.innerHTML = `
+              <input type="text" value="${key}" class="attr-key w-1/2 p-1 border rounded text-xs">
+              <input type="text" value="${val}" class="attr-val w-1/2 p-1 border rounded text-xs">
+          `;
+          attrList.appendChild(div);
+        });
+      }
     });
 
-    // 5. Limpar e Preencher Modificadores
     const modContainer = document.getElementById("modifiers-container");
     modContainer.innerHTML = "";
+
     (p.modifiers || []).forEach((group) => {
-      addGroup();
-      const lastGroup = modContainer.lastElementChild;
-      const groupId = lastGroup.dataset.id;
+      if (typeof addGroup === "function") {
+        addGroup();
+        const lastGroup = modContainer.lastElementChild;
+        const groupId = lastGroup.dataset.id;
 
-      lastGroup.querySelector(".group-name").value = group.name;
-      lastGroup.querySelector(".group-min").value = group.min;
-      lastGroup.querySelector(".group-max").value = group.max;
+        lastGroup.querySelector(".group-name").value = group.name;
+        lastGroup.querySelector(".group-min").value = group.min;
+        lastGroup.querySelector(".group-max").value = group.max;
 
-      // Preencher itens do grupo
-      group.items.forEach((item) => {
-        addItemToGroup(groupId);
-        const lastItem =
-          lastGroup.querySelector(".items-list").lastElementChild;
-        lastItem.querySelector(".item-name").value = item.name;
-        lastItem.querySelector(".item-price").value = item.price;
-        lastItem.querySelector(".item-status").value = item.status;
-      });
+        group.items.forEach((item) => {
+          if (typeof addItemToGroup === "function") {
+            addItemToGroup(groupId);
+            const lastItem =
+              lastGroup.querySelector(".items-list").lastElementChild;
+            lastItem.querySelector(".item-name").value = item.name;
+            lastItem.querySelector(".item-price").value = item.price;
+            lastItem.querySelector(".item-status").value = item.status;
+
+            // 💡 Preenche o campo oculto ou data-attribute do ID do subitem se ele existir na tela
+            if (lastItem.querySelector(".item-id")) {
+              lastItem.querySelector(".item-id").value = item.id || "";
+            } else {
+              lastItem.dataset.id = item.id || "";
+            }
+          }
+        });
+      }
     });
   } catch (err) {
-    alert("Erro ao carregar edição: " + err.message);
+    console.error("Erro na carga de edição:", err);
+    Swal.fire({
+      icon: "error",
+      title: "Falha ao carregar dados",
+      text: err.message,
+      confirmButtonColor: "#dc2626",
+    });
   }
 }
 
+/**
+ * ============================================================================
+ * 🔄 MÓDULO DE INTERAÇÕES E REQUISIÇÕES (MUTATIONS)
+ * ============================================================================
+ */
+
+/**
+ * Remove em definitivo um produto da base de dados através de uma requisição DELETE HTTP.
+ * Exibe uma caixa de diálogo de confirmação (SweetAlert2) com comportamento destrutivo assíncrono
+ * e revalida a listagem do grid caso a operação seja confirmada pelo operador.
+ * @param {string} id - ID corporativo/comercial do produto alvo de exclusão
+ */
 async function deleteProduct(id) {
-  // 1. Confirmação inicial
-  if (!confirm(`Remover o item ${id}?`)) return;
+  const resultado = await Swal.fire({
+    title: "Tem certeza?",
+    text: `Deseja mesmo remover o item ${id}? Esta ação não pode ser desfeita.`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#dc2626",
+    cancelButtonColor: "#6b7280",
+    confirmButtonText: "Sim, remover!",
+    cancelButtonText: "Cancelar",
+  });
+
+  if (!resultado.isConfirmed) return;
 
   try {
     const res = await fetch(`${API_URL}/${id}`, {
@@ -682,25 +863,41 @@ async function deleteProduct(id) {
       headers: { "Content-Type": "application/json" },
     });
 
-    // 2. Tenta ler o JSON de resposta (seja sucesso ou erro)
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      // Se o status não for 200-299, lança um erro com a mensagem da API
-      throw new Error(data.error || "Erro desconhecido ao deletar");
-      alert(data.error);
+      throw new Error(data.error || "Erro desconhecido ao deletar o produto.");
     }
 
-    // 3. Sucesso
-    alert("Sucesso: " + (data.message || "Produto removido!"));
-    loadProducts();
+    Toast.fire({
+      icon: "success",
+      title: data.message || "Produto removido com sucesso!",
+    });
+
+    if (typeof loadProducts === "function") loadProducts();
   } catch (err) {
-    // 4. Exibe o erro no alert (CastError, 404, 500, etc)
-    console.error("Erro completo:", err);
-    alert("Erro na exclusão: " + err.message);
+    console.error("Erro completo na exclusão:", err);
+    Swal.fire({
+      icon: "error",
+      title: "Erro na exclusão",
+      text: err.message,
+      confirmButtonColor: "#dc2626",
+      confirmButtonText: "Fechar",
+    });
   }
 }
 
+/**
+ * ============================================================================
+ * 🖥️ MÓDULO DE INTERFACE VISUAL (DOM & FLUXO DE TELAS)
+ * ============================================================================
+ */
+
+/**
+ * Inicializa a exibição da camada de overlay (Modal) voltada ao cadastro de novos produtos.
+ * Purga chaves identitárias residuais e referências de subformulários dinâmicos de SKUs ou
+ * Modificadores para evitar vazamento ou persistência cruzada de dados.
+ */
 function openModal() {
   document.getElementById("prod-id").value = ""; // MUITO IMPORTANTE
   document.getElementById("modal-title").innerText = "Cadastrar Produto";
@@ -716,6 +913,10 @@ function openModal() {
   document.getElementById("product-modal").classList.remove("hidden");
 }
 
+/**
+ * Esconde o modal de produtos do viewport, executa o reset nativo dos elementos de formulário
+ * e limpa chaves de ancoragem ocultas para assegurar a integridade visual e funcional na próxima invocação.
+ */
 function closeModal() {
   // 1. Esconde o modal
   const modal = document.getElementById("product-modal");
@@ -742,7 +943,16 @@ function closeModal() {
   }
 }
 
-// --- GESTÃO DE PEDIDOS ---
+/**
+ * ============================================================================
+ * 📋 MÓDULO DE GESTÃO DE PEDIDOS (OMS INTEGRATION)
+ * ============================================================================
+ */
+
+/**
+ * Consome os dados de pedidos da API remota.
+ * Sincroniza o ecossistema chamando a revalidação do badge e a montagem das ordens.
+ */
 async function loadOrders() {
   try {
     const res = await fetch(`https://prafoodapi.onrender.com/pedidos`, {
@@ -751,12 +961,66 @@ async function loadOrders() {
       headers: { "Content-Type": "application/json" },
     });
     const orders = await res.json();
+    updateOrdersBadge(orders);
     renderOrders(orders);
   } catch (err) {
     console.error("Erro ao carregar pedidos:", err);
   }
 }
 
+/**
+ * Atualiza dinamicamente o número indicador de novos pedidos no painel lateral de navegação.
+ * Extrai, normaliza e avalia arrays aninhados baseados em strings de status padronizadas.
+ * @param {Array|Object} orders - Resposta bruta de pedidos enviada pelo servidor
+ */
+function updateOrdersBadge(orders) {
+  const badge = document.getElementById("badge-orders-count");
+
+  // 🚨 ALERT 1: Verifica se o elemento HTML existe
+  if (!badge) {
+    return;
+  }
+
+  // Normalização
+  let listaPedidos = Array.isArray(orders)
+    ? orders
+    : orders?.data || orders?.pedidos || [];
+
+  if (listaPedidos.length === 0) {
+    badge.classList.add("hidden");
+    return;
+  }
+
+  // Captura um exemplo do status do primeiro pedido para sabermos como ele está escrito no banco
+  const exemploStatus = listaPedidos[0]?.status || "SEM STATUS RECONHECIDO";
+
+  // Filtro
+  const qtdPendentes = listaPedidos.filter((order) => {
+    const statusAtual = order.status ? order.status.toUpperCase().trim() : "";
+    return statusAtual === "CREATED" || statusAtual === "PENDING";
+  }).length;
+
+  // Atualização visual
+  if (qtdPendentes > 0) {
+    badge.innerText = qtdPendentes;
+    badge.classList.remove("hidden");
+  } else {
+    badge.classList.add("hidden");
+  }
+}
+
+/**
+ * ============================================================================
+ * 📋 MÓDULO DE GESTÃO DE PEDIDOS (OMS - ORDER MANAGEMENT SYSTEM)
+ * ============================================================================
+ */
+
+/**
+ * Renderiza os cartões (cards) de pedidos no painel de controle operacional.
+ * Insere metadados estruturais como `data-status` e `data-type` para dar suporte
+ * a filtros dinâmicos no front-end, mapeia as cores por status e injeta modificadores de itens.
+ * @param {Array} orders - Lista de objetos de pedidos retornada pelo servidor
+ */
 function renderOrders(orders) {
   const container = document.getElementById("orders-container");
 
@@ -836,6 +1100,13 @@ function renderOrders(orders) {
     .join("");
 }
 
+/**
+ * Transiciona o estado de um pedido específico no back-end.
+ * Bloqueia a concorrência visual através de telas de carregamento do SweetAlert2, intercepta transições
+ * de prontidão (`READY`) para disparar a baixa de inventário e expõe opções para o envio de mensagens transacionais.
+ * @param {string} orderId - ID único persistido na base de dados (MongoDB _id ou equivalente)
+ * @param {string} newStatus - Alvo de transição do pedido (ex: "PREPARING", "READY")
+ */
 async function updateOrderStatus(orderId, newStatus) {
   Swal.fire({
     title: "Atualizando status...",
@@ -897,6 +1168,11 @@ async function updateOrderStatus(orderId, newStatus) {
   }
 }
 
+/**
+ * Constrói e direciona templates de mensagens transacionais customizadas para a API pública do WhatsApp.
+ * Realiza a higienização de caracteres não numéricos nas strings telefônicas e codifica componentes de URI.
+ * @param {Object} pedido - Objeto de dados contendo o estado atualizado da ordem
+ */
 function enviarNotificacaoWhatsApp(pedido) {
   // Acessando os dados conforme a estrutura do seu objeto
   const cliente = pedido.cliente || {};
@@ -927,6 +1203,18 @@ function enviarNotificacaoWhatsApp(pedido) {
   }
 }
 
+/**
+ * ============================================================================
+ * 📦 MÓDULO DE LOGÍSTICA E CONTROLE DE INVENTÁRIO (INVENTORY ENGINE)
+ * ============================================================================
+ */
+
+/**
+ * Gerencia o abatimento reativo de estoque na base de dados através de chamadas concorrentes.
+ * Trata de forma segmentada caminhos de execução independentes para produtos convencionais baseados em SKUs
+ * de tamanho e agrupamentos lógicos da categoria "Combos" com extração em profundidade de subprodutos.
+ * @param {Object} pedido - Payload completo do pedido cujos itens sofrerão dedução de estoque
+ */
 async function processarVendasDoPedido(pedido) {
   if (!pedido.itens || pedido.itens.length === 0) return;
 
@@ -943,36 +1231,116 @@ async function processarVendasDoPedido(pedido) {
       const produtoFull = await resProduto.json();
       const dadosProduto = produtoFull.data || produtoFull; // Ajuste conforme sua API retorna
 
-      // 2. Localiza o SKU que corresponde ao tamanho do pedido
-      // Compara "media" do pedido com "media" do cadastro do produto
-      const skuCorrespondente = dadosProduto.skus.find(
-        (sku) => sku.name.toLowerCase() === itemPedido.size.toLowerCase(),
-      );
+      // VEJA AQUI: Verifica se o produto pertence à categoria "Combos"
+      const isCombo = dadosProduto.categoryId === "Combos";
 
-      if (!skuCorrespondente) {
-        throw new Error(
-          `Tamanho "${itemPedido.size}" não encontrado no cadastro do produto.`,
+      if (isCombo) {
+        console.log(`📦 Processando combo: ${dadosProduto.name}`);
+
+        // 1. Acessa o modificador diretamente da raiz do produto
+        const modificadorItens = dadosProduto.modifiers?.find(
+          (m) => m.name.toLowerCase().trim() === "itens inclusos no combo",
         );
+
+        if (
+          !modificadorItens ||
+          !modificadorItens.items ||
+          modificadorItens.items.length === 0
+        ) {
+          console.error("DEBUG - Produto completo recebido:", dadosProduto);
+          throw new Error(
+            `O combo "${dadosProduto.name}" não possui itens válidos na raiz de modifiers.`,
+          );
+        }
+
+        // 2. Mapeia e dispara o abatimento de estoque para cada subitem
+        const promessasItensCombo = modificadorItens.items.map(
+          async (subItem) => {
+            // 🔍 PASSO CHAVE: Busca o produto original (ex: Sprite) para descobrir o SKU real dele
+            const resProdutoReal = await fetch(`${API_URL}/${subItem.id}`, {
+              credentials: "include",
+            });
+
+            if (!resProdutoReal.ok) {
+              throw new Error(
+                `Produto ingrediente [${subItem.name}] não foi encontrado no sistema.`,
+              );
+            }
+
+            const produtoRealFull = await resProdutoReal.json();
+            const dadosProdutoReal = produtoRealFull.data || produtoRealFull;
+
+            // Pega o primeiro SKU disponível do produto (Refrigerantes/Sopas em combo geralmente usam o SKU único)
+            const skuReal = dadosProdutoReal.skus?.[0];
+
+            if (!skuReal || !skuReal._id) {
+              throw new Error(
+                `O produto [${subItem.name}] não possui um SKU válido configurado.`,
+              );
+            }
+
+            // 🚀 AGORA SIM: Faz o POST enviando o _id do SKU REAL do produto!
+            const resVendaSubItem = await fetch(
+              `${API_URL}/${subItem.id}/sell`,
+              {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  productId: subItem.id, // ID comercial do produto ("PROD-177...")
+                  skuId: skuReal._id, // 💡 O _id real do SKU recuperado do banco (ex: "69ff2982...")
+                  quantity: parseInt(itemPedido.quantity),
+                }),
+              },
+            );
+
+            if (!resVendaSubItem.ok) {
+              const errorData = await resVendaSubItem.json();
+              throw new Error(
+                `Erro no subitem [${subItem.name}]: ${errorData.message || "Erro ao abater estoque"}`,
+              );
+            }
+          },
+        );
+
+        // Aguarda o estoque de todos os subitens ser baixado com sucesso
+        await Promise.all(promessasItensCombo);
+        return `Sucesso Combo: ${itemPedido.name}`;
+      } else {
+        // 2. Localiza o SKU que corresponde ao tamanho do pedido
+        // Compara "media" do pedido com "media" do cadastro do produto
+        const skuCorrespondente = dadosProduto.skus.find(
+          (sku) => sku.name.toLowerCase() === itemPedido.size.toLowerCase(),
+        );
+
+        if (!skuCorrespondente) {
+          throw new Error(
+            `Tamanho "${itemPedido.size}" não encontrado no cadastro do produto.`,
+          );
+        }
+
+        // 3. Agora sim, faz a venda usando o ID real do SKU
+        const resVenda = await fetch(
+          `${API_URL}/${itemPedido.productId}/sell`,
+          {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              productId: itemPedido.productId,
+              skuId: skuCorrespondente._id, // O ID real: "SKU-177..."
+              quantity: parseInt(itemPedido.quantity),
+            }),
+          },
+        );
+
+        if (!resVenda.ok) {
+          const errorData = await resVenda.json();
+          throw new Error(errorData.message || "Erro ao abater estoque");
+        }
+
+        return `Sucesso: ${itemPedido.name}`;
       }
-
-      // 3. Agora sim, faz a venda usando o ID real do SKU
-      const resVenda = await fetch(`${API_URL}/${itemPedido.productId}/sell`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productId: itemPedido.productId,
-          skuId: skuCorrespondente._id, // O ID real: "SKU-177..."
-          quantity: parseInt(itemPedido.quantity),
-        }),
-      });
-
-      if (!resVenda.ok) {
-        const errorData = await resVenda.json();
-        throw new Error(errorData.message || "Erro ao abater estoque");
-      }
-
-      return `Sucesso: ${itemPedido.name}`;
     } catch (err) {
       console.error(`[ERRO_ITEM]: ${itemPedido.name}`, err.message);
       throw err; // Repassa para o Promise.all interromper ou logar
@@ -988,6 +1356,17 @@ async function processarVendasDoPedido(pedido) {
   }
 }
 
+/**
+ * ============================================================================
+ * 🖨️ MÓDULO DE IMPRESSÃO (PERIPHERAL INTEGRATION)
+ * ============================================================================
+ */
+
+/**
+ * Encaminha o identificador de um pedido para a rota de impressão térmica/física do servidor.
+ * Altera o estado do SweetAlert2 para um carregamento bloqueado e emite o feedback do resultado.
+ * @param {string} id - ID de exibição ou corporativo do pedido
+ */
 async function printOrder(id) {
   // Show a "Loading" state so the user knows something is happening
   Toast.fire({
@@ -1038,8 +1417,19 @@ async function printOrder(id) {
   }
 }
 
-let myCharts = {}; // Armazena instâncias dos gráficos
+/**
+ * ============================================================================
+ * 📊 MÓDULO ANALÍTICO & INTELIGÊNCIA DE NEGÓCIOS (BI)
+ * ============================================================================
+ */
 
+let myCharts = {}; // Dicionário global para cache e gerenciamento de concorrência de instâncias do Chart.js
+
+/**
+ * Calcula os principais KPIs financeiros da operação e consolida as métricas agrupadas.
+ * Alimenta dinamicamente os contêineres de texto e delega a renderização gráfica dos dados agregados.
+ * @param {Array} orders - Coleção de pedidos filtrada ou completa
+ */
 function renderDashboard(orders) {
   // Defina quais status representam uma venda concluída com sucesso
   const statusConcluidos = ["DELIVERED", "DELIVERED"];
@@ -1094,6 +1484,11 @@ function renderDashboard(orders) {
   );
 }
 
+/**
+ * Controlador abstrato para renderização de instâncias do Chart.js.
+ * Implementa de forma transparente o ciclo de destruição (`.destroy()`) de instâncias antigas
+ * para prevenir vazamentos de memória e falhas de sobreposição gráfica no Canvas HTML5.
+ */
 function updateChart(canvasId, labels, data, label, type) {
   if (myCharts[canvasId]) myCharts[canvasId].destroy(); // Destroi o gráfico anterior antes de criar novo
 
@@ -1127,6 +1522,9 @@ function updateChart(canvasId, labels, data, label, type) {
 
 let allOrdersData = []; // Variável global para guardar os pedidos sem precisar ir no banco toda hora
 
+/**
+ * Consome o histórico totalizador de ordens emitidas e inicializa a pipeline de filtros.
+ */
 async function loadDashboardData() {
   try {
     const res = await fetch("https://prafoodapi.onrender.com/pedidos", {
@@ -1143,6 +1541,10 @@ async function loadDashboardData() {
   }
 }
 
+/**
+ * Filtra programaticamente o cache global de ordens cruzando dados cronológicos e de negócios.
+ * Trata desvios em milissegundos e atualiza a renderização de forma reativa.
+ */
 function applyDashFilters() {
   const period = document.getElementById("dash-filter-period").value;
   const payment = document.getElementById("dash-filter-payment").value;
@@ -1174,10 +1576,18 @@ function applyDashFilters() {
   renderDashboard(filtered); // Chama a função que desenha os gráficos com os dados filtrados
 }
 
-// Exemplo de automação no Frontend
-// Variável para controle do primeiro funcionamento
-let primeiraBusca = true;
+/**
+ * ============================================================================
+ * 📡 MOTOR DE COMUNICAÇÃO EM TEMPO REAL (REAL-TIME POLLING ENGINE)
+ * ============================================================================
+ */
 
+let primeiraBusca = true; // Flag de depuração de primeira inicialização
+
+/**
+ * Cria uma thread cíclica com intervalo estável de 5000ms para monitoramento de novos pedidos.
+ * Intercepta e dispara notificações sonoras globais e injeta gatilhos de recarga dinâmica baseados no foco visual do operador.
+ */
 setInterval(async () => {
   try {
     // Log discreto no console apenas para debugar
@@ -1225,7 +1635,17 @@ setInterval(async () => {
   }
 }, 45000);
 
-// Lógica de Filtragem do Cardápio
+/**
+ * ============================================================================
+ * 🔍 CONTROLADORES DE FILTRO DE INTERFACE (UI FILTERS)
+ * ============================================================================
+ */
+
+/**
+ * Filtra em tempo real as linhas do DOM na tabela de gerenciamento do cardápio.
+ * Avalia de forma cruzada correspondências parciais por string (busca), chaves idênticas (categoria)
+ * e o metadado customizado de disponibilidade (`data-status`).
+ */
 function filterMenu() {
   const searchTerm = document
     .getElementById("filter-menu-search")
@@ -1255,7 +1675,17 @@ function filterMenu() {
   });
 }
 
-// Lógica de Filtragem de Pedidos
+/**
+ * ============================================================================
+ * 🔍 CONTROLADORES DE FILTRO DE INTERFACE (UI FILTERS)
+ * ============================================================================
+ */
+
+/**
+ * Filtra em tempo real os cartões (cards) de pedidos exibidos no painel operacional.
+ * Avalia de forma cruzada correspondências parciais por string (busca) e os metadados
+ * estruturais de estado injetados no escopo do elemento (`data-status` e `data-type`).
+ */
 function filterOrders() {
   const searchTerm = document
     .getElementById("filter-order-search")
@@ -1280,7 +1710,20 @@ function filterOrders() {
       matchesSearch && matchesStatus && matchesType ? "block" : "none";
   });
 }
-// Adicionamos o parâmetro skuId na assinatura da função
+
+/**
+ * ============================================================================
+ * 📦 MÓDULO DE LOGÍSTICA E CONTROLE DE INVENTÁRIO (INVENTORY ENGINE)
+ * ============================================================================
+ */
+
+/**
+ * Registra entradas ou baixas pontuais de estoque para um SKU específico via prompt interativo.
+ * Bloqueia a concorrência visual durante as transações HTTP POST e revalida o catálogo local.
+ * @param {string} productId - ID comercial/pai do produto alvo
+ * @param {string} skuId - Identificador único do SKU persistido no banco (_id)
+ * @param {string} type - Tipo de mutação logística desejada ("add" ou "sell")
+ */
 async function handleStock(productId, skuId, type) {
   const isAdd = type === "add";
 
@@ -1360,7 +1803,16 @@ async function handleStock(productId, skuId, type) {
   }
 }
 
-// Função que roda assim que a página carrega
+/**
+ * ============================================================================
+ * 🔄 MÓDULO DE SESSÃO E CONTROLE DE ACESSO (AUTHENTICATION)
+ * ============================================================================
+ */
+
+/**
+ * Restaura de forma assíncrona o estado de sessão do usuário no carregamento inicial da página.
+ * Valida permissões corporativas através de tokens de identificação persistidos em cookies seguros.
+ */
 async function restaurarSessao() {
   try {
     // 1. Tenta buscar o usuário (o cookie vai automático via credentials)
@@ -1378,7 +1830,7 @@ async function restaurarSessao() {
 
       // 4. Inicia o monitor de pedidos se ele existir
       if (typeof monitorarNovosPedidos === "function") {
-        setInterval(monitorarNovosPedidos, 45000);
+        setInterval(monitorarNovosPedidos, 5000);
       }
     } else if (currentUser) {
       // Se for cliente, mostra a tela de menu do cliente
@@ -1394,7 +1846,11 @@ async function restaurarSessao() {
 // Executa a restauração assim que o script carregar
 restaurarSessao();
 
-// --- NAVEGAÇÃO ---
+/**
+ * Gerencia o roteamento de telas da área administrativa (SPA behavior).
+ * Modifica as classes de layout do Tailwind CSS e persiste o estado da aba ativa no LocalStorage.
+ * @param {string} section - Identificador da seção destino (ex: "menu", "orders", "dashboard")
+ */
 async function toggleSection(section) {
   // 🔥 NOVO: Salva a seção atual para não perder no F5
   localStorage.setItem("admin_last_section", section);
@@ -1433,10 +1889,13 @@ async function toggleSection(section) {
   }
 }
 
-// --- ESTADO DAS MESAS ---
+/**
+ * ============================================================================
+ * 🍽️ MÓDULO DE CONTROLE DE COMANDAS (TABLES MANAGEMENT SYSTEM)
+ * ============================================================================
+ */
 let selectedTable = null;
 let tablesData = {}; // { 1: [itens], 2: [] ... }
-let allProductsGlobal = []; // Armazena os produtos vindos da API
 
 // Escudos para evitar erros de funções do cliente que não existem no Admin
 let currentProduct = null;
@@ -1447,8 +1906,10 @@ function updateTotal() {
   console.log("Total atualizado");
 }
 
-// Inicializa 10 mesas se não existirem
-// 1. Inicializa as mesas buscando do BANCO DE DADOS
+/**
+ * Sincroniza o mapa de comandas consumindo os dados persistidos no MongoDB via API.
+ * Implementa rotinas de backup baseadas no LocalStorage do navegador para garantir resiliência offline.
+ */
 async function initTables() {
   // Pega o ID da empresa (certifique-se que storeTag está disponível globalmente)
   const companyId = typeof storeTag !== "undefined" ? storeTag : "ADMIN-LOCAL";
@@ -1492,7 +1953,10 @@ async function initTables() {
   renderTablesGrid();
 }
 
-// Renderiza os quadradinhos das mesas
+/**
+ * Constrói e renderiza a matriz visual indicadora das mesas no painel.
+ * Aplica mutações e estados de animação baseados na ocupação ou foco ativo de gerenciamento.
+ */
 function renderTablesGrid() {
   const grid = document.getElementById("tables-grid");
   if (!grid) return;
@@ -1514,7 +1978,11 @@ function renderTablesGrid() {
   }
 }
 
-// Seleciona uma mesa para gerenciar
+/**
+ * Seleciona e estabelece uma mesa ativa no espaço de trabalho lateral.
+ * Invoca o barramento de carregamento do cardápio acoplado se necessário.
+ * @param {number} num - Índice identificador da mesa
+ */
 function selectTable(num) {
   selectedTable = num;
   document.getElementById("table-workspace").classList.remove("hidden");
@@ -1537,7 +2005,12 @@ function selectTable(num) {
   updateTableSummary();
 }
 
-// Versão simplificada do seu renderProducts para caber na lateral do Admin
+/**
+ * Injeta uma grade simplificada do catálogo de produtos ativos no menu compacto lateral.
+ * Realiza o escape de aspas simples nas strings JSON injetadas diretamente nos gatilhos inline do DOM.
+ * @param {Array} products - Lista de produtos ativos cadastrados
+ * @param {HTMLElement} container - Nó HTML de destino para montagem
+ */
 function renderProductsForAdmin(products, container) {
   const filtered = products.filter((p) => p.status === "ACTIVE");
 
@@ -1557,6 +2030,9 @@ function renderProductsForAdmin(products, container) {
     .join("");
 }
 
+/**
+ * Desfaz a seleção ativa de mesa e oculta as ferramentas de edição de comandas do painel lateral.
+ */
 function cancelTableSelection() {
   selectedTable = null;
   document.getElementById("table-workspace").classList.add("hidden");
@@ -1564,7 +2040,9 @@ function cancelTableSelection() {
   renderTablesGrid();
 }
 
-// Renderiza uma versão compacta do seu cardápio para o Admin clicar
+/**
+ * Renderiza o catálogo geral de itens disponíveis para inclusão nas comandas.
+ */
 function renderTableMenu() {
   const container = document.getElementById("table-menu-container");
   // 'products' deve ser sua variável global que contém os itens do cardápio
@@ -1583,10 +2061,18 @@ function renderTableMenu() {
     .join("");
 }
 
+/**
+ * Oculta o modal interno de gerenciamento de modificadores/opções da comanda ativa.
+ */
 function closeAdminTableModal() {
   document.getElementById("admin-table-item-modal").classList.add("hidden");
 }
 
+/**
+ * Abre a janela de detalhamento e quantidade para inclusão de um item em comanda de mesa.
+ * Adiciona salvaguarda temporal para prevenir que desvios de navegação ocultem a seção de mesas.
+ * @param {Object} product - Payload do produto selecionado
+ */
 function openProductDetailsForTable(product) {
   const modal = document.getElementById("admin-table-item-modal");
   if (!modal) return;
@@ -1614,6 +2100,9 @@ function openProductDetailsForTable(product) {
   }
 }
 
+/**
+ * Executa uma busca por texto parcial sobre a listagem compacta de produtos das comandas.
+ */
 function filterMenuTable() {
   const term = document
     .getElementById("search-table-product")
@@ -1625,6 +2114,11 @@ function filterMenuTable() {
   renderProductsForAdmin(filtered, container);
 }
 
+/**
+ * Extrai os parâmetros definidos no formulário (Tamanho, Adicionais e Observações) e consolida
+ * um objeto unificado de item de comanda. Sincroniza os estados locais e invoca o motor de persistência.
+ * @param {Object} product - O objeto de metadados do produto adicionado
+ */
 function saveItemToTable(product) {
   // 1. Validações iniciais
   const selectedSku = document.querySelector('input[name="sku-opt"]:checked');
@@ -1692,6 +2186,10 @@ function saveItemToTable(product) {
   });
 }
 
+/**
+ * Executa a totalização matemática dos consumos da comanda ativa na mesa em edição.
+ * Reconstrói dinamicamente as linhas de resumo injetando botões de expurgo por índice físico.
+ */
 function updateTableSummary() {
   const container = document.getElementById("current-table-items");
   const items = tablesData[selectedTable] || [];
@@ -1724,6 +2222,11 @@ function updateTableSummary() {
     `R$ ${total.toFixed(2)}`;
 }
 
+/**
+ * Remove cirurgicamente um item específico de uma comanda através do seu índice posicional.
+ * Sincroniza as alterações locais e força a redemarcação da grade de dados.
+ * @param {number} index - Posição do item no vetor interno da comanda da mesa
+ */
 function removeItemFromTable(index) {
   tablesData[selectedTable].splice(index, 1);
   saveTablesToStorage(); // <--- ADICIONE ESTA LINHA
@@ -1731,21 +2234,22 @@ function removeItemFromTable(index) {
   renderTablesGrid();
 }
 
+/**
+ * ============================================================================
+ * 🍽️ MÓDULO DE CONTROLE DE COMANDAS (TABLES MANAGEMENT SYSTEM)
+ * ============================================================================
+ */
+
+/**
+ * Consolida o fechamento financeiro da mesa ativa, monta o payload em estrita
+ * conformidade com o Schema/Classe de pedidos, despacha para a API e aciona a impressão.
+ */
 async function closeTableAccount() {
   const itemsMesa = tablesData[selectedTable];
 
   if (!itemsMesa || itemsMesa.length === 0) {
     return Swal.fire({ icon: "error", title: "Mesa sem itens!" });
   }
-
-  const concordouTermos = document.getElementById("check-termos").checked;
-
-  // 3. Validação dos Termos
-  if (!concordouTermos)
-    return Toast.fire({
-      icon: "info",
-      title: "Aceite os termos para continuar",
-    });
 
   const result = await Swal.fire({
     title: `Fechar Mesa ${selectedTable}?`,
@@ -1839,6 +2343,11 @@ async function closeTableAccount() {
   }
 }
 
+/**
+ * Despacha o payload consolidado do pedido de mesa para persistência via POST.
+ * @param {Object} pedidoFinal - Objeto mapeado do pedido
+ * @returns {Promise<Object>} Retorna o documento persistido retornado pela API
+ */
 async function criarPedidoNoSistema(pedidoFinal) {
   Swal.fire({
     title: "Processando pedido...",
@@ -1863,6 +2372,17 @@ async function criarPedidoNoSistema(pedidoFinal) {
   return result.data; // Retorna o pedido criado (contendo o ID gerado pelo banco)
 }
 
+/**
+ * ============================================================================
+ * 📦 MÓDULO DE RENDERIZAÇÃO DINÂMICA DE ATRIBUTOS E OPCIONAIS
+ * ============================================================================
+ */
+
+/**
+ * Constrói a interface reativa de customização do produto selecionado.
+ * Mapeia os SKUs ativos avaliando os níveis de estoque e injeta grupos de modificadores.
+ * @param {Object} product - O modelo de dados do produto carregado
+ */
 function openProductDetails(product) {
   currentProduct = product;
   switchTab("details");
@@ -1978,6 +2498,10 @@ function openProductDetails(product) {
   renderAttributes(0);
 }
 
+/**
+ * Incrementa ou decrementa a quantidade alocada de um subitem modificador.
+ * Valida de forma rígida tetos operacionais máximos do agrupamento lógico de opcionais.
+ */
 function updateModifierQty(groupIndex, itemIndex, delta) {
   const id = `mod-${groupIndex}-${itemIndex}`;
   const input = document.getElementById(id);
@@ -2002,6 +2526,10 @@ function updateModifierQty(groupIndex, itemIndex, delta) {
   if (typeof updateTotal === "function") updateTotal();
 }
 
+/**
+ * Transpõe as chaves internas de atributos do SKU (ex: Sabores estruturados) em rádio inputs.
+ * @param {number} skuIndex - Posição física da variante mapeada
+ */
 function renderAttributes(skuIndex) {
   const container = document.getElementById("sku-attributes-container");
   const sku = currentProduct.skus[skuIndex];
@@ -2042,6 +2570,10 @@ function renderAttributes(skuIndex) {
     `;
 }
 
+/**
+ * Altera a volumetria central de itens do carrinho. Intercepta limites físicos
+ * do estoque dinâmico associado ao metadado do SKU ativo emitindo alertas em tempo real.
+ */
 function updateQty(id, delta) {
   const input = document.getElementById(id);
   let newVal = parseInt(input.value) + delta;
@@ -2068,15 +2600,18 @@ function updateQty(id, delta) {
   if (typeof updateTotal === "function") updateTotal();
 }
 
-// Função auxiliar para resetar a quantidade ao trocar de tamanho
+/**
+ * Persiste de forma concorrente a matriz de comandas no LocalStorage (tolerância a falhas local)
+ * e dispara sincronização assíncrona na nuvem via POST com suporte a sessões cruzadas (`Credentials`).
+ */
 function resetMainQty() {
   const input = document.getElementById("main-qty");
   if (input) input.value = 1;
 }
 
 /**
- * Salva o estado das mesas tanto no LocalStorage (backup rápido)
- * quanto no Banco de Dados (sincronização remota).
+ * Persiste de forma concorrente a matriz de comandas no LocalStorage (tolerância a falhas local)
+ * e dispara sincronização assíncrona na nuvem via POST com suporte a sessões cruzadas (`Credentials`).
  */
 async function saveTablesToStorage() {
   // 1. Backup imediato no navegador (evita perda se a internet oscilar)
@@ -2130,7 +2665,11 @@ async function saveTablesToStorage() {
   }
 }
 
-// Funções de Controle do Modal da Impressora
+/**
+ * ============================================================================
+ * 🖨️ MÓDULO DE IMPRESSÃO (PERIPHERAL INTEGRATION)
+ * ============================================================================
+ */
 function openPrinterModal() {
   document.getElementById("printer-modal").classList.remove("hidden");
 }
@@ -2139,38 +2678,205 @@ function closePrinterModal() {
   document.getElementById("printer-modal").classList.add("hidden");
 }
 
-function testPrint() {
-  Swal.fire({
-    title: "Imprimindo teste...",
-    text: "Aguarde a saída do papel na impressora térmica.",
-    icon: "info",
-    timer: 2000,
-    showConfirmButton: false,
-    toast: true,
-    position: "top-end",
-  });
-}
+/**
+ * Varre o segmento de rede local consumindo rotas de descobrimento de hardware socket (Porta 9100).
+ * Altera estados vetoriais e reconstrói a listagem dinâmica de periféricos.
+ */
+async function scanNetworkPrinters() {
+  const scanIcon = document.getElementById("scan-icon");
+  const listContainer = document.getElementById("printer-list");
 
-function reconnectPrinter() {
-  const btn = event.target;
-  btn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Conectando...';
-  btn.disabled = true;
+  // Inicia estado visual de carregamento
+  scanIcon.classList.add("fa-spin");
+  listContainer.innerHTML = `
+    <div class="flex items-center justify-center gap-2 py-4 text-blue-600">
+      <i class="fas fa-spinner fa-spin text-sm"></i>
+      <span class="text-xs font-medium">Buscando na rede...</span>
+    </div>
+  `;
 
-  setTimeout(() => {
-    btn.innerHTML = "Reiniciar";
-    btn.disabled = false;
-    Swal.fire("Sucesso", "Impressora reinicializada com sucesso!", "success");
-  }, 1500);
-}
+  try {
+    const response = await fetch("https://prafoodapi.onrender.com/pedidos/discover");
+    if (!response.ok) throw new Error("Erro na requisição de busca");
 
-// Fechar modal ao clicar fora dele
-window.onclick = function (event) {
-  const modal = document.getElementById("printer-modal");
-  if (event.target == modal) {
-    closePrinterModal();
+    const printers = await response.json(); // Espera um array: [{ip, port, name}]
+    listContainer.innerHTML = ""; // Limpa o carregamento
+
+    if (printers.length === 0) {
+      listContainer.innerHTML = `
+        <p class="text-center text-xs text-gray-500 py-3">
+          Nenhuma impressora encontrada na porta 9100.
+        </p>
+      `;
+      return;
+    }
+
+    // Renderiza cada impressora encontrada na lista
+    printers.forEach((printer) => {
+      const card = document.createElement("div");
+      card.className =
+        "flex items-center justify-between p-2.5 border border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50/40 cursor-pointer transition group animate-fade-in";
+      card.onclick = () => selectAndConnectPrinter(printer.ip, printer.name);
+
+      card.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-gray-100 group-hover:bg-blue-100 group-hover:text-blue-600 text-gray-500 rounded-lg transition">
+            <i class="fas fa-network-wired text-xs"></i>
+          </div>
+          <div class="text-left">
+            <p class="text-xs font-bold text-gray-700">${printer.name}</p>
+            <p class="text-[10px] text-gray-400">${printer.ip}:${printer.port}</p>
+          </div>
+        </div>
+        <i class="fas fa-chevron-right text-gray-300 group-hover:text-blue-500 text-xs transition mr-1"></i>
+      `;
+      listContainer.appendChild(card);
+    });
+  } catch (error) {
+    console.error("[FRONT_DISCOVER_ERROR]", error);
+    listContainer.innerHTML = `
+      <p class="text-center text-xs text-red-500 py-3 font-medium">
+        Falha ao escanear rede local.
+      </p>
+    `;
+  } finally {
+    scanIcon.classList.remove("fa-spin");
   }
-};
+}
 
+/**
+ * Registra o handshake lógico entre o back-end e a impressora selecionada na rede.
+ */
+async function selectAndConnectPrinter(ip, name) {
+  updateUIStatus("conectando", name, ip);
+
+  try {
+    const response = await fetch("https://prafoodapi.onrender.com/pedidos/connect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ip: ip }),
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      updateUIStatus("conectado", name, ip);
+      // ✅ NOVO: Salva os dados da impressora no navegador para lembrar no F5
+      localStorage.setItem("ultima_impressora_ip", ip);
+      localStorage.setItem("ultima_impressora_nome", name);
+    } else {
+      alert(`Falha na conexão: ${result.error || "Erro desconhecido"}`);
+      updateUIStatus("desconectado");
+    }
+  } catch (error) {
+    console.error("[FRONT_CONNECT_ERROR]", error);
+    alert("Não foi possível estabelecer comunicação com o servidor.");
+    updateUIStatus("desconectado");
+  }
+}
+
+/**
+ * Dispara comando sequencial de teste físico de caracteres direto nas bobinas térmicas.
+ */
+async function testPrint() {
+  const btnTest = document.getElementById("btn-test-print");
+  const originalText = btnTest.innerText;
+
+  btnTest.disabled = true;
+  btnTest.innerText = "Enviando...";
+
+  try {
+    const response = await fetch(`https://prafoodapi.onrender.com/pedidos/test-print`, {
+      method: "POST",
+    });
+    const result = await response.json();
+
+    if (result.success) {
+      console.log("Impressão de teste concluída com sucesso.");
+    } else {
+      alert(`Erro no teste físico: ${result.error}`);
+    }
+  } catch (error) {
+    console.error("[FRONT_TEST_ERROR]", error);
+    alert("Erro de rede ao tentar enviar o teste de impressão.");
+  } finally {
+    btnTest.disabled = false;
+    btnTest.innerText = originalText;
+  }
+}
+
+/**
+ * Mutador auxiliar de layout responsável pela inversão cromática e de rótulos do módulo de impressão.
+ */
+function updateUIStatus(state, name = "Nenhum", ip = "0.0.0.0") {
+  const badge = document.getElementById("status-badge");
+  const textStatus = document.getElementById("printer-status-text");
+  const txtName = document.getElementById("active-printer-name");
+  const txtIp = document.getElementById("active-printer-ip");
+  const btnTest = document.getElementById("btn-test-print");
+
+  txtName.innerText = name;
+  txtIp.innerText = ip;
+
+  if (state === "conectando") {
+    badge.className = "p-3 bg-amber-100 text-amber-600 rounded-lg";
+    textStatus.className = "font-bold text-amber-600 text-sm";
+    textStatus.innerText = "Conectando...";
+    btnTest.disabled = true;
+    btnTest.classList.add("opacity-50", "cursor-not-allowed");
+  } else if (state === "conectado") {
+    badge.className = "p-3 bg-green-100 text-green-600 rounded-lg";
+    textStatus.className = "font-bold text-green-600 text-sm";
+    textStatus.innerText = "Conectada / Online";
+
+    txtName.classList.remove("text-gray-400");
+    txtIp.classList.remove("text-gray-400");
+
+    btnTest.disabled = false;
+    btnTest.classList.remove("opacity-50", "cursor-not-allowed");
+  } else {
+    // desconectado
+    badge.className = "p-3 bg-gray-100 text-gray-400 rounded-lg";
+    textStatus.className = "font-bold text-gray-400 text-sm";
+    textStatus.innerText = "Desconectada";
+
+    txtName.innerText = "Nenhum";
+    txtIp.innerText = "0.0.0.0";
+    txtName.classList.add("text-gray-400");
+    txtIp.classList.add("text-gray-400");
+
+    btnTest.disabled = true;
+    btnTest.classList.add("opacity-50", "cursor-not-allowed");
+  }
+}
+
+/* ==========================================================================
+   🚀 RECONEXÃO AUTOMÁTICA (RODA LOGO APÓS O CARREGAMENTO DA PÁGINA)
+   ========================================================================== */
+window.addEventListener("DOMContentLoaded", () => {
+  const ipSalvo = localStorage.getItem("ultima_impressora_ip");
+  const nomeSalvo = localStorage.getItem("ultima_impressora_nome");
+
+  // Se existir uma impressora gravada no histórico do navegador, reconecta ela!
+  if (ipSalvo && nomeSalvo) {
+    console.log(
+      `[AUTO_CONNECT] Reconectando automaticamente à impressora: ${nomeSalvo} (${ipSalvo})`,
+    );
+    selectAndConnectPrinter(ipSalvo, nomeSalvo);
+  }
+});
+
+/**
+ * ============================================================================
+ * 🏪 CONTROLADORES DE STATUS DA UNIDADE COMERCIAL
+ * ============================================================================
+ */
+
+/**
+ * Varre e injeta de forma síncrona o botão de estado de atendimento em todos
+ * os nós de classe mapeados (suporta replicação responsiva mobile/desktop).
+ * @param {Object} user - Documento do usuário contendo o storeStatus ativo
+ */
 function renderStoreStatus(user) {
   // 1. querySelectorAll retorna uma NodeList (uma lista de elementos)
   const containers = document.querySelectorAll(".store-status-box");
@@ -2205,6 +2911,11 @@ function renderStoreStatus(user) {
   });
 }
 
+/**
+ * ============================================================================
+ * ⚖️ TERMINAIS DE CONFORMIDADE DE REGULAMENTO (COMPLIANCE CENTER - LGPD)
+ * ============================================================================
+ */
 function openLegalModal(type) {
   const modal = document.getElementById("legalModal");
   const title = document.getElementById("modalTitle");
@@ -2225,7 +2936,7 @@ function closeLegalModal() {
   document.body.style.overflow = "auto"; // Destrava o scroll
 }
 
-// Conteúdos Detalhados
+// Dicionário Estático de Textos Regulatórios e de Legitimidade Operacional
 const legalData = {
   termos: {
     title: "Termos de Uso",
@@ -2255,3 +2966,23 @@ const legalData = {
   },
 };
 
+/**
+ * Permite conectar diretamente inserindo o IP, sem depender do scanner automático
+ */
+async function connectManualPrinter() {
+  const ipInput = document.getElementById("manual-printer-ip");
+  const ip = ipInput.value.trim();
+
+  // Validação de IP usando o seu Toast
+  if (!ip || ip.split(".").length !== 4) {
+    Toast.fire({
+      icon: "warning",
+      title: "Endereço de IP inválido",
+      text: "Por favor, digite um IP no formato correto (Ex: 192.168.1.150).",
+    });
+    return;
+  }
+
+  // Chama a mesma função que o clique do card chamaria, simulando o nome da Epson
+  await selectAndConnectPrinter(ip, "Epson TM (IP Manual)");
+}
